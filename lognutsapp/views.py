@@ -17,7 +17,7 @@ from django.contrib.auth.views import (
 
 #モデル
 from .models import (
-    Subject
+    Subject, PersonalLog
 )
 
 #フォーム
@@ -52,7 +52,7 @@ class Logout(LogoutView):
     template_name = 'lognuts/top.html'
 
 class SearchInput(generic.FormView):
-    """検索入力のフォームを扱う"""
+    """検索入力のフォームからの入力を扱う"""
     form_class = SearchForm
     template_name = 'lognuts/search_input.html'
 
@@ -62,17 +62,61 @@ class SearchInput(generic.FormView):
 
     def form_valid(self, form, **kwargs):
         context = super().get_context_data(**kwargs)
-        s_store = form['store'].value()
-        s_food = form['food'].value()
-        s_size = form['size'].value()
+        #外食食品DBをNaN->''としてデータフレーム化
+        mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL).fillna('')
 
-        mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL)
-
-        print(mealsout_df)
-
-        #context['search_foods'] = search_foods
-        #context['confirm_columns'] = ['レストラン名', '食品名', 'サイズ']
-        #セッションにデータを保存
-        #self.request.session['search_foods'] = search_foods
-
+        if form['store'].value():
+            #フォームのstoreがある場合、文字列を含むレコード抽出
+            mealsout_df = mealsout_df[ 
+                mealsout_df['store_name'].str.contains(form['store'].value()) 
+            ]
+        if form['food'].value():
+            #フォームのfoodがある場合、文字列を含むレコード抽出
+            mealsout_df = mealsout_df[ 
+                mealsout_df['food_name'].str.contains(form['food'].value()) 
+            ]
+        if form['size'].value():
+            #フォームのsizeがある場合、文字列を含むレコード抽出
+            mealsout_df = mealsout_df[ 
+                mealsout_df['food_size'].str.contains(form['size'].value()) 
+            ]
+        context['columns'] = ['レストラン名', '食品名', 'サイズ']
+        context['search_foods'] = mealsout_df
         return render(self.request, 'lognuts/search_confirm.html', context)
+
+class SearchComplete(generic.TemplateView):
+    template_name = 'lognuts/search_complete.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        #外食食品DBをNaN->''としてデータフレーム化
+        mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL).fillna('')
+        context['columns'] = [
+            'データ挿入日時', '店名', '食品名', 'サイズ', 'カロリー', '炭水化物', 'タンパク質', '脂質', '食塩相当量'
+        ]
+
+        if self.kwargs['id']:
+            #合致したレコードをpandas seriesとして取り出す
+            input_record =  mealsout_df[ (mealsout_df['id'] == self.kwargs['id']) ].iloc[0]
+            p_log = PersonalLog()
+            print(input_record.protein)
+            p_log.user = self.request.user
+            p_log.restaurant = input_record.store_name
+            p_log.size = input_record.food_size
+            p_log.food_name = input_record.food_name
+            p_log.energie = input_record.calorie
+            p_log.carbohydrate = dec_conv(input_record.carbohydrate)
+            p_log.protein = dec_conv(input_record.protein)
+            p_log.fat = dec_conv(input_record.fat)
+            p_log.salt = dec_conv(input_record.salt)
+            context['p_log'] = p_log
+            p_log.save()
+
+        return context
+
+#floatを2桁のDecimal型に変換する
+def dec_conv(float_num):
+    decimal_num = Decimal(float_num).quantize(
+        Decimal('0.01'), rounding=ROUND_HALF_UP
+    )
+    return decimal_num

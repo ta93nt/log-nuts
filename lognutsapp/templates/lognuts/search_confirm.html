@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container text-muted pt-3 pb-3">
+    <h2><i class="fas fa-search"></i> 検索入力 食品選択 </h2>
+    <p>食べた食品を選択してください</p>
+</div>
+
+<div class="container table-responsive pt-2 pb-4">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          {% for c in columns %}
+            <th scope="col" class="text-nowrap">{{ c }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for index, row in search_foods.iterrows %}
+        <tr>
+            <td>{{row.store_name}}</td>
+            <td><a href="{% url 'lognuts:search_complete' user.pk row.id %}">{{row.food_name}}</a></td>
+            <td>{{row.food_size}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>
+
+{% endblock content %}
