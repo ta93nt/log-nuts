@@ -6,7 +6,17 @@
     <div class='container text-center'>
         <span class='display-2 font-logo text-white'>Log Nuts</span>
         <h2 class="pt-5 pb-5 wf-mplus1p text-white"></h2>
-        
+        {% if user and not user.is_anonymous %}
+            <button type="button" class="btn btn-danger mt-5 mb-5"
+            onclick="location.href='{% url 'lognuts:mypage' user.pk %}'">
+                マイページへ
+            </button>
+        {% else %}
+            <button type="button" class="btn btn-danger mt-5 mb-5" 
+                onclick="location.href='{% url 'lognuts:login' %}'">
+                ログインする
+            </button>
+        {% endif %}
     </div>
 </div>
 
