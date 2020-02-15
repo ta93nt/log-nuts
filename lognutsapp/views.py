@@ -1,7 +1,6 @@
 from django.shortcuts import render
+from django.views import generic
 
-from django.http import HttpResponse
 
-
-def top(request):
-    return HttpResponse("Hello, world. You're at the study top page.")
+class TopView(generic.TemplateView):
+    template_name = 'lognutsapp/top.html' 
