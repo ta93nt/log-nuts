@@ -12,4 +12,4 @@
 
 ## Usage
 `python manage.pyt runserver` を実行した後に、
-<localhost:8000>　へアクセス
+<http://localhost:8000>　へアクセス
