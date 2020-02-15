@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container text-muted pt-3 pb-3">
+    <h2>マイページ</h2>
+</div>
+
+<div class="container lead pt-3 pb-3">
+    {% if user and not user.is_anonymous %}
+        <p>ようこそ</p>
+    {% else %}
+        <p>ログインして下さい.</p>
+    {% endif %}
+</div>
+
+<div class="container pt-3 pb-5">
+
+    <div class="row mt-3 mb-5 text-center">
+        
+        <button type="button" class="btn btn-lg btn-info ml-4 mt-3"
+        onclick="location.href=''">
+            <i class="fas fa-heartbeat text-white"></i>　好み診断
+        </button>
+
+        <button type="button" class="btn btn-lg btn-info ml-4 mt-3"
+        onclick="location.href=''">
+            <i class="fas fa-utensils text-white"></i>　献立作り
+        </button>
+
+    </div>
+</div>
+
+{% endblock content %}

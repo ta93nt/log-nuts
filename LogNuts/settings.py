@@ -131,3 +131,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+#ログイン画面のURL
+LOGIN_URL = 'lognuts:login'
+#ログイン後に遷移する画面のURL
+LOGIN_REDIRECT_URL='lognuts:top'
+#ログアウト後に遷移する画面のURL
+LOGOUT_REDIRECT_URL='lognuts:top'
