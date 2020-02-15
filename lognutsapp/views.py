@@ -22,7 +22,7 @@ from .models import (
 
 #フォーム
 from .forms import (
-    LoginForm
+    LoginForm, SearchForm
 )
 
 #ライブラリ
@@ -50,3 +50,29 @@ class Login(LoginView):
 class Logout(LogoutView):
     """ログアウトページ"""
     template_name = 'lognuts/top.html'
+
+class SearchInput(generic.FormView):
+    """検索入力のフォームを扱う"""
+    form_class = SearchForm
+    template_name = 'lognuts/search_input.html'
+
+    def form_invalid(self, form):
+        ''' バリデーションに失敗した時 '''
+        return super().form_invalid(form)
+
+    def form_valid(self, form, **kwargs):
+        context = super().get_context_data(**kwargs)
+        s_store = form['store'].value()
+        s_food = form['food'].value()
+        s_size = form['size'].value()
+
+        mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL)
+
+        print(mealsout_df)
+
+        #context['search_foods'] = search_foods
+        #context['confirm_columns'] = ['レストラン名', '食品名', 'サイズ']
+        #セッションにデータを保存
+        #self.request.session['search_foods'] = search_foods
+
+        return render(self.request, 'lognuts/search_confirm.html', context)

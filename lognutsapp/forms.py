@@ -8,3 +8,8 @@ class LoginForm(AuthenticationForm):
        super().__init__(*args, **kwargs)
        self.fields['username'].widget.attrs['class'] = 'form-control'
        self.fields['password'].widget.attrs['class'] = 'form-control'
+
+class SearchForm(forms.Form):
+    store = forms.CharField(label='店舗名', max_length=50, required=False)
+    food = forms.CharField(label='食品名', max_length=50, required=False)
+    size = forms.CharField(label='サイズ', max_length=50, required=False)

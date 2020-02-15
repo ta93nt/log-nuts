@@ -138,3 +138,6 @@ LOGIN_URL = 'lognuts:login'
 LOGIN_REDIRECT_URL='lognuts:top'
 #ログアウト後に遷移する画面のURL
 LOGOUT_REDIRECT_URL='lognuts:top'
+
+#mealsout_nuts_DBのURL
+MEALSOUT_NUTS_URL='lognutsapp/static/lognuts/csv/mealsout_nuts.csv'

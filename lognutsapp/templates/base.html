@@ -100,7 +100,7 @@
                     <ul class="pl-2" style="list-style: none;">
                         <li><a class="text-white" href="{% url 'lognuts:top' %}">トップ</a></li>
                         {% if user and not user.is_anonymous %}
-                            <li><a class="text-white" href="/">マイページ</a></li>
+                            <li><a class="text-white" href="{% url 'lognuts:mypage' user.pk %}">マイページ</a></li>
                             <li><a class="text-white" href="/">ユーザ情報</a class="text-white"></li>
                             <li><a class="text-white" href="{% url 'lognuts:logout' %}">ログアウト</a></li>
                         {% else %}
