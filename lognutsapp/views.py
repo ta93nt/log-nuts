@@ -30,11 +30,21 @@ import pandas as pd
 from decimal import Decimal, ROUND_HALF_UP #Decimal変換の際に利用
 
 
+"""
+カスタムミックスイン
+"""
+class OnlyYouMixin(UserPassesTestMixin):
+    raise_exception = True
+    # 今ログインしてるユーザーのpkと、そのユーザー情報ページのpkが同じか、又はスーパーユーザーなら許可
+    def test_func(self):
+        user = self.request.user
+        return user.pk == int(self.kwargs['pk']) or user.is_superuser
+
 class TopView(generic.TemplateView):
     """Lognutsトップページ"""
     template_name = 'lognuts/top.html' 
 
-class MypageView(generic.TemplateView):
+class MypageView(OnlyYouMixin, generic.TemplateView):
     """Lognutsマイページ"""
     model = User
     template_name = 'lognuts/mypage.html'
@@ -51,7 +61,7 @@ class Logout(LogoutView):
     """ログアウトページ"""
     template_name = 'lognuts/top.html'
 
-class SearchInput(generic.FormView):
+class SearchInput(OnlyYouMixin, generic.FormView):
     """検索入力のフォームからの入力を扱う"""
     form_class = SearchForm
     template_name = 'lognuts/search_input.html'
@@ -84,7 +94,7 @@ class SearchInput(generic.FormView):
         context['search_foods'] = mealsout_df
         return render(self.request, 'lognuts/search_confirm.html', context)
 
-class SearchComplete(generic.TemplateView):
+class SearchComplete(OnlyYouMixin, generic.TemplateView):
     template_name = 'lognuts/search_complete.html'
 
     def get_context_data(self, **kwargs):
