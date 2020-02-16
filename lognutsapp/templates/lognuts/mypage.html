@@ -2,8 +2,14 @@
 
 {% block content %}
 
+<!-- グラフを表示するChart.jsを読み込む -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.bundle.min.js"></script>
+
 <div class="container text-muted pt-3 pb-3">
     <h2>マイページ</h2>
+    {% for t in toweek_nut_list %}
+        {{t}}
+    {% endfor %}
 </div>
 
 <div class="container lead pt-3 pb-3">
@@ -40,7 +46,7 @@
     </div>
 </div>
 
-<div class="container table-responsive pt-2 pb-5">
+<div class="container table-responsive pt-2 pb-2">
     <h3 class="text-muted"> 食事ログカレンダー </h3>
 
     <div class="text-center pb-3">
@@ -64,6 +70,7 @@
         <tbody>
         
         {% for day in week_days %}
+            <!--trは今日の日付なら色付け-->
             {% if now == day %}
             <tr class="table-info">
             {% else %}
@@ -82,7 +89,6 @@
                     {% endif %}
                 {% endfor %}
                 </td>
-
             </tr>
 
         {% endfor %}
@@ -91,5 +97,47 @@
     </table>
 </div>
 
+<div class="container pt-2 pb-5">
+    <h3 class="text-muted"> 食事ログの分析 </h3>
+    <div class="row">
+        <div class="col-md-6 pt-3 text-center">
+            <h5 class="text-muted">１週間のカロリー</h5>
+            <canvas id="chart_energie"></canvas>
+        </div>
+        <div class="col-md-6 pt-3 text-center">
+            <h5 class="text-muted">今日の栄養バランス</h5>
+            <canvas id="chart_pfc" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<!--１週間のカロリー棒グラフ -->
+<script>
+var ctx = document.getElementById("chart_energie").getContext('2d');
+var myChart = new Chart(ctx, {
+    responsive : true,
+    scaleLabel: "<%=value%> kcal",
+    type: 'bar',
+    data: {
+            labels: ["-6day", "-5day", "-4day", "-3day", "-2day", "-1day", "today"],
+            datasets: [{
+                label: '摂取したカロリー',
+                data: [
+                    {% for w in toweek_nut_list %}
+                    {% if w.energie is None %}
+                        0,
+                    {% else %}
+                        {{w.energie}},
+                    {% endif %}
+                    {% endfor %}
+                ],
+                backgroundColor: "rgba(230,57,70,0.6)"
+            }]
+        },
+    }
+);
+</script>
+
 
 {% endblock content %}
+

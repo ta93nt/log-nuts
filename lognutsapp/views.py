@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from . import models
+from django.db.models import Sum
 
 #ミックスイン
 from django.contrib.auth.mixins import (
@@ -134,11 +135,34 @@ class WeekCalendarMixin(BaseCalendarMixin):
         }
         return calendar_data
 
+"""
+栄養素計算のMixIn
+"""
+class NutsCulcMixin:
+    def get_week_nut_list(self):
+        """１週間分の栄養素を取得する"""
+        week_nut_list = []
+        for i_day in reversed(range(7)):
+            cal_date = datetime.date.today() - datetime.timedelta(i_day)
+            oneday_log = PersonalLog.objects.filter(
+                user=self.request.user,
+                date__range = (cal_date, cal_date+datetime.timedelta(1))
+            )
+            oneday_nut = oneday_log.aggregate(
+                energie=Sum('energie'),
+                protein=Sum('protein'),
+                fat=Sum('fat'),
+                carbohydrate=Sum('carbohydrate'),
+                salt=Sum('salt')
+            )
+            week_nut_list.append(oneday_nut)
+        return week_nut_list
+
 class TopView(generic.TemplateView):
     """Lognutsトップページ"""
     template_name = 'lognuts/top.html' 
 
-class MypageView(OnlyYouMixin, WeekCalendarMixin, generic.TemplateView):
+class MypageView(OnlyYouMixin, WeekCalendarMixin, NutsCulcMixin, generic.TemplateView):
     """Lognutsマイページ"""
     model = User
     template_name = 'lognuts/mypage.html'
@@ -150,6 +174,8 @@ class MypageView(OnlyYouMixin, WeekCalendarMixin, generic.TemplateView):
         context['PersonalLog'] = PersonalLog.objects.values('date', 'food_name').filter(
             user=self.request.user
         )
+        context['toweek_nut_list'] = self.get_week_nut_list()
+
         return context
 
 class Login(LoginView):

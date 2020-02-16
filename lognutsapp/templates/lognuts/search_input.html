@@ -12,8 +12,7 @@
     <p>店名や食品名で食品を検索します。</p>
 </div>
 
-
-<div class="container pt-2 pb-4">
+<div class="container text-center pt-2 pb-4">
     <form action="{% url 'lognuts:search_input' user.pk %}" method="post">
         {% csrf_token %}
         {{ form.non_field_errors }}

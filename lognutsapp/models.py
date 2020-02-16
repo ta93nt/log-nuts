@@ -46,15 +46,15 @@ class PersonalLog(models.Model):
     # 食品名 : 文字列30桁
     food_name = models.CharField(max_length=30)
     # 店舗の電話番号
-    tel = models.CharField(max_length=30, null=True)
+    tel = models.CharField(max_length=30, null=True, blank=True)
     # 店舗名
     restaurant = models.CharField(max_length=30)
     # 購入日時
     date = models.DateTimeField(default=timezone.now)
     # 値段
-    price = models.CharField(max_length=30, null=True)
+    price = models.CharField(max_length=30, null=True, blank=True)
     # コード
-    code = models.CharField(max_length=30, null=True)
+    code = models.CharField(max_length=30, null=True, blank=True)
     # サイズ
     size = models.CharField(max_length=30, null=True, blank=True)
     # エネルギー
