@@ -147,3 +147,19 @@ MEALSOUT_NUTS_URL='lognutsapp/static/lognuts/csv/mealsout_nuts.csv'
 RADAR_P = Decimal(16.5)
 RADAR_F = Decimal(25)
 RADAR_C = Decimal(57.5)
+
+#推薦する食品の数
+FOOD_SUGGESTION_NUM = 5
+#推薦に使用する食品の摂取時刻(n時間以内に食べた食品を使って推薦)
+SUGGESTION_HOUR = 24
+
+#栄養所要量の推奨摂取の下限・上減
+#タンパク質
+P_RATE_MAX = 20
+P_RATE_MIN = 13
+#脂質
+F_RATE_MAX = 20
+F_RATE_MIN = 30
+#炭水化物
+C_RATE_MAX = 50
+C_RATE_MIN = 65

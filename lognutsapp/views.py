@@ -143,25 +143,17 @@ class NutsCulcMixin:
         """過去１週間分の栄養素を取得する"""
         week_nut_list = []
         for i_day in reversed(range(7)):
-            cal_date = datetime.date.today() - datetime.timedelta(i_day)
-            oneday_log = PersonalLog.objects.filter(
-                user=self.request.user,
-                date__range = (cal_date, cal_date+datetime.timedelta(1))
-            )
-            oneday_nut = oneday_log.aggregate(
-                energie=Sum('energie'),
-                protein=Sum('protein'),
-                fat=Sum('fat'),
-                carbohydrate=Sum('carbohydrate'),
-                salt=Sum('salt')
-            )
+            calc_date = datetime.date.today() - datetime.timedelta(i_day)
+            oneday_nut = self.get_day_nut(calc_date)
             week_nut_list.append(oneday_nut)
         return week_nut_list
+
     def get_day_nut(self, calc_date):
-        """引数の日付の栄養素の合計を計算する"""
+        """引数の日付の一日分の栄養素の合計を計算する"""
+        end_date = calc_date + datetime.timedelta(days=1)
         day_log = PersonalLog.objects.filter(
             user=self.request.user,
-            date__range = (calc_date, calc_date+datetime.timedelta(1))
+            date__range = (calc_date, end_date)
         )
         day_nut = day_log.aggregate(
             energie=Sum('energie'),
@@ -171,34 +163,85 @@ class NutsCulcMixin:
             salt=Sum('salt')
         )
         return day_nut
-    def get_pfc(self, day_nut):
-        """引数の栄養素から1日分のPFCを算出する"""
-        if day_nut['energie'] != None: #引数の栄養素データがある時
+
+    def get_latest_nut(self, calc_hour):
+        """現在時刻から引数の calc_hour 時間以内の栄養素の合計を計算する"""
+        end_datetime = datetime.datetime.now()
+        start_datetime = end_datetime - datetime.timedelta(hours=calc_hour)
+        latest_log = PersonalLog.objects.filter(
+            user=self.request.user,
+            date__range = (start_datetime, end_datetime)
+        )
+        latest_nut = latest_log.aggregate(
+            energie=Sum('energie'),
+            protein=Sum('protein'),
+            fat=Sum('fat'),
+            carbohydrate=Sum('carbohydrate'),
+            salt=Sum('salt')
+        )
+        return latest_nut
+
+    def get_pfc(self, arg_nut):
+        """引数の栄養素からPFCの比率を算出する"""
+        if arg_nut['energie'] != None: #引数の栄養素データがある時
             #p_rateを計算
             p_rate = Decimal(
-                day_nut['protein']*4/day_nut['energie']*100
+                arg_nut['protein']*4/arg_nut['energie']*100
             ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             #f_rateを計算
             f_rate = Decimal(
-                day_nut['fat']*9/day_nut['energie']*100
+                arg_nut['fat']*9/arg_nut['energie']*100
             ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             #c_rateを計算
             c_rate = Decimal(
                 100 - p_rate - f_rate
             ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-            day_pfc = {
-                'p':p_rate,
-                'f':f_rate,
-                'c':c_rate
-            }
+            #
+            return_pfc = {'p':p_rate, 'f':f_rate, 'c':c_rate }
         else:
-            day_pfc = {
-                'p':None,
-                'f':None,
-                'c':None
-            }
-        return day_pfc
+            return_pfc = {'p':None, 'f':None, 'c':None}
+        return return_pfc
+
+    def get_pfc_diff(self, arg_pfc):
+        """
+        栄養素の比率{p,f,c}の辞書を引数とし、
+        PFC_diffの{p_diff, f_diff, c_diff, pfc_diff}の辞書を返す
+        """
+        #まずp_diff, f_diff, c_diffのそれぞれを求め、リターンする辞書に格納
+        ret = {
+            'p_diff':self.get_diff(arg_pfc['p'], settings.P_RATE_MIN, settings.P_RATE_MAX),
+            'f_diff':self.get_diff(arg_pfc['f'], settings.F_RATE_MIN, settings.F_RATE_MAX),
+            'c_diff':self.get_diff(arg_pfc['c'], settings.C_RATE_MIN, settings.C_RATE_MAX)
+        }
+        #pfc_diff = |p_diff| + |f_diff| + |c_diff| (絶対値計算)
+        ret['pfc_diff'] = abs(ret['p_diff']) + abs(ret['f_diff']) + abs(ret['c_diff'])
+        return ret
+
+    def get_diff(self, arg_rate, min_v, max_v):
+        """
+        入力された栄養素比率が上限・下限いないなら0
+        上限・下限を超えると超えた比率をの差分を返す
+        """
+        if min_v <= arg_rate and arg_rate <= max_v:
+            return_diff = 0
+        elif arg_rate < min_v:
+            return_diff = arg_rate - min_v
+        elif max_v < arg_rate:
+            return_diff = arg_rate - max_v
+        return return_diff
+
+    def get_suggestion_food_list(self):
+        """三大栄養素バランスを整える食品のリストを取得"""
+        #外食食品DBをNaN->''としてデータフレーム化
+        mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL).fillna('')
+        #直近のSUGGESTION_HOUR時間以内の食品の栄養素を取得
+        latest_nut = self.get_latest_nut(settings.SUGGESTION_HOUR)
+        #栄養素データが取得できた時(エネルギーが空じゃない時)
+        if latest_nut['energie'] != None:
+            latest_pfc = self.get_pfc(latest_nut)
+            latest_pfc_diff = self.get_pfc_diff(latest_pfc)
+            
+        return 0
 
 class TopView(generic.TemplateView):
     """Lognutsトップページ"""
@@ -216,6 +259,7 @@ class MypageView(OnlyYouMixin, WeekCalendarMixin, NutsCulcMixin, generic.Templat
         context['PersonalLog'] = PersonalLog.objects.values('date', 'food_name').filter(
             user=self.request.user
         )
+        #栄養素の可視化に利用する
         context['toweek_nut_list'] = self.get_week_nut_list()
         context['today_nut'] = self.get_day_nut( datetime.date.today() )
         context['today_pfc'] = self.get_pfc( context['today_nut'] )
@@ -224,7 +268,8 @@ class MypageView(OnlyYouMixin, WeekCalendarMixin, NutsCulcMixin, generic.Templat
             'f': settings.RADAR_F,
             'c': settings.RADAR_C
         }
-
+        #食事推薦に利用する
+        context['suggestion_food_list'] = self.get_suggestion_food_list()
         return context
 
 class Login(LoginView):
@@ -240,31 +285,22 @@ class SearchInput(OnlyYouMixin, generic.FormView):
     """検索入力のフォームからの入力を扱う"""
     form_class = SearchForm
     template_name = 'lognuts/search_input.html'
-
     def form_invalid(self, form):
         ''' バリデーションに失敗した時 '''
         return super().form_invalid(form)
-
     def form_valid(self, form, **kwargs):
         context = super().get_context_data(**kwargs)
         #外食食品DBをNaN->''としてデータフレーム化
         mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL).fillna('')
-
         if form['store'].value():
             #フォームのstoreがある場合、文字列を含むレコード抽出
-            mealsout_df = mealsout_df[ 
-                mealsout_df['store_name'].str.contains(form['store'].value()) 
-            ]
+            mealsout_df = mealsout_df[ mealsout_df['store_name'].str.contains(form['store'].value()) ]
         if form['food'].value():
             #フォームのfoodがある場合、文字列を含むレコード抽出
-            mealsout_df = mealsout_df[ 
-                mealsout_df['food_name'].str.contains(form['food'].value()) 
-            ]
+            mealsout_df = mealsout_df[ mealsout_df['food_name'].str.contains(form['food'].value()) ]
         if form['size'].value():
             #フォームのsizeがある場合、文字列を含むレコード抽出
-            mealsout_df = mealsout_df[ 
-                mealsout_df['food_size'].str.contains(form['size'].value()) 
-            ]
+            mealsout_df = mealsout_df[ mealsout_df['food_size'].str.contains(form['size'].value()) ]
         context['columns'] = ['レストラン名', '食品名', 'サイズ']
         context['search_foods'] = mealsout_df
         return render(self.request, 'lognuts/search_confirm.html', context)
