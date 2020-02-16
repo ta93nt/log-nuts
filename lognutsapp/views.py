@@ -140,7 +140,7 @@ class WeekCalendarMixin(BaseCalendarMixin):
 """
 class NutsCulcMixin:
     def get_week_nut_list(self):
-        """過去１週間分の栄養素を取得する"""
+        """過去１週間分の栄養素辞書(1日分)のリスト(7要素)を取得する"""
         week_nut_list = []
         for i_day in reversed(range(7)):
             calc_date = datetime.date.today() - datetime.timedelta(i_day)
@@ -230,16 +230,61 @@ class NutsCulcMixin:
             return_diff = arg_rate - max_v
         return return_diff
 
+    def sort_large_diff(self, pfc_diff):
+        """
+        入力されたPFC_diffの辞書の中のp_diff, f_diff, c_diff
+        バリューの絶対値が大きい順に並べ替え、キー(カラム名)のリストを出力する
+        """
+        abs_dict = {}  #p_diff, f_diff, c_diffの絶対値の辞書
+        for k, v in pfc_diff.items():
+            abs_dict[k] = abs(v)
+        large_list = []
+        for k, v in sorted(abs_dict.items(), key=lambda x: -x[1]):
+            large_list.append(k)
+        #pfc_diffが含まれていれば削除
+        if 'pfc_diff' in large_list:
+            large_list.remove('pfc_diff')
+        return large_list
+    
+    def get_menu_tag_query(self):
+        """
+        推薦する食品のメニュータグの絞り込みのクエリを作成する
+        """
+        menu_tag_list = settings.MENU_TAG_LIST
+        ret_query = ''
+        for m in menu_tag_list:
+            ret_query = ret_query + "menu_tag=='{}'|".format(m)
+        ret_query = ret_query[:-1] #最後の余分な文字列'|'を削除
+        return ret_query
+
     def get_suggestion_food_list(self):
         """三大栄養素バランスを整える食品のリストを取得"""
         #外食食品DBをNaN->''としてデータフレーム化
-        mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL).fillna('')
+        mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL)
         #直近のSUGGESTION_HOUR時間以内の食品の栄養素を取得
         latest_nut = self.get_latest_nut(settings.SUGGESTION_HOUR)
         #栄養素データが取得できた時(エネルギーが空じゃない時)
         if latest_nut['energie'] != None:
             latest_pfc = self.get_pfc(latest_nut)
             latest_pfc_diff = self.get_pfc_diff(latest_pfc)
+            #remain_energie(残りのエネルギー)の初期値として栄養所要量のエネルギー基準を取得
+            remain_energie = settings.ENERGIE_BORDER
+            #摂取したエネルギーを減算する
+            remain_energie = remain_energie - latest_nut['energie']
+            large_pfc_list = self.sort_large_diff(latest_pfc_diff)
+            menu_tag_query = self.get_menu_tag_query()
+
+            #残りのエネルギーを超えず、メニュータグに合致した料理を抽出
+            suggest_df = mealsout_df.query(
+                'calorie<{} & ({})'.format(remain_energie,menu_tag_query)
+            )
+
+            print(suggest_df)
+
+
+
+
+
             
         return 0
 

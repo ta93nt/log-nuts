@@ -153,7 +153,12 @@ FOOD_SUGGESTION_NUM = 5
 #推薦に使用する食品の摂取時刻(n時間以内に食べた食品を使って推薦)
 SUGGESTION_HOUR = 24
 
-#栄養所要量の推奨摂取の下限・上減
+"""
+栄養所要量の推奨摂取量の設定(生活運動強度が[適度]の男性の基準値)
+"""
+#エネルギー
+ENERGIE_BORDER = 2650
+
 #タンパク質
 P_RATE_MAX = 20
 P_RATE_MIN = 13
@@ -163,3 +168,8 @@ F_RATE_MIN = 30
 #炭水化物
 C_RATE_MAX = 50
 C_RATE_MIN = 65
+
+#推薦時に読み込むメニュータグリスト
+MENU_TAG_LIST = [
+    0,1,2,3
+]
