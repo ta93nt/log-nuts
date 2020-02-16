@@ -102,7 +102,7 @@ class SearchComplete(OnlyYouMixin, generic.TemplateView):
         #外食食品DBをNaN->''としてデータフレーム化
         mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL).fillna('')
         context['columns'] = [
-            'データ挿入日時', '店名', '食品名', 'サイズ', 'カロリー', '炭水化物', 'タンパク質', '脂質', '食塩相当量'
+            'データ挿入日時', 'レストラン名', 'メニュー名', 'サイズ', 'カロリー', '炭水化物', 'タンパク質', '脂質', '食塩相当量'
         ]
 
         if self.kwargs['id']:
