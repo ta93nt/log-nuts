@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import os
 import environ #環境変数をファイルから読み込む
+from decimal import Decimal
 
 env = environ.Env()
 env.read_env('.env')
@@ -141,3 +142,8 @@ LOGOUT_REDIRECT_URL='lognuts:top'
 
 #mealsout_nuts_DBのURL
 MEALSOUT_NUTS_URL='lognutsapp/static/lognuts/csv/mealsout_nuts.csv'
+
+#PFCのレーダーチャートのPFCの基準値
+RADAR_P = Decimal(16.5)
+RADAR_F = Decimal(25)
+RADAR_C = Decimal(57.5)

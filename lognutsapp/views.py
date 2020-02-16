@@ -28,7 +28,7 @@ from .forms import (
 
 #ライブラリ
 import pandas as pd
-from decimal import Decimal, ROUND_HALF_UP #Decimal変換の際に利用
+from decimal import Decimal, ROUND_HALF_UP
 import calendar
 import datetime
 from collections import deque
@@ -140,7 +140,7 @@ class WeekCalendarMixin(BaseCalendarMixin):
 """
 class NutsCulcMixin:
     def get_week_nut_list(self):
-        """１週間分の栄養素を取得する"""
+        """過去１週間分の栄養素を取得する"""
         week_nut_list = []
         for i_day in reversed(range(7)):
             cal_date = datetime.date.today() - datetime.timedelta(i_day)
@@ -157,6 +157,48 @@ class NutsCulcMixin:
             )
             week_nut_list.append(oneday_nut)
         return week_nut_list
+    def get_day_nut(self, calc_date):
+        """引数の日付の栄養素の合計を計算する"""
+        day_log = PersonalLog.objects.filter(
+            user=self.request.user,
+            date__range = (calc_date, calc_date+datetime.timedelta(1))
+        )
+        day_nut = day_log.aggregate(
+            energie=Sum('energie'),
+            protein=Sum('protein'),
+            fat=Sum('fat'),
+            carbohydrate=Sum('carbohydrate'),
+            salt=Sum('salt')
+        )
+        return day_nut
+    def get_pfc(self, day_nut):
+        """引数の栄養素から1日分のPFCを算出する"""
+        if day_nut['energie'] != None: #引数の栄養素データがある時
+            #p_rateを計算
+            p_rate = Decimal(
+                day_nut['protein']*4/day_nut['energie']*100
+            ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            #f_rateを計算
+            f_rate = Decimal(
+                day_nut['fat']*9/day_nut['energie']*100
+            ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            #c_rateを計算
+            c_rate = Decimal(
+                100 - p_rate - f_rate
+            ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+            day_pfc = {
+                'p':p_rate,
+                'f':f_rate,
+                'c':c_rate
+            }
+        else:
+            day_pfc = {
+                'p':None,
+                'f':None,
+                'c':None
+            }
+        return day_pfc
 
 class TopView(generic.TemplateView):
     """Lognutsトップページ"""
@@ -175,6 +217,13 @@ class MypageView(OnlyYouMixin, WeekCalendarMixin, NutsCulcMixin, generic.Templat
             user=self.request.user
         )
         context['toweek_nut_list'] = self.get_week_nut_list()
+        context['today_nut'] = self.get_day_nut( datetime.date.today() )
+        context['today_pfc'] = self.get_pfc( context['today_nut'] )
+        context['radar_pfc_point'] = {
+            'p': settings.RADAR_P,
+            'f': settings.RADAR_F,
+            'c': settings.RADAR_C
+        }
 
         return context
 
