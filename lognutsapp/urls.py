@@ -8,6 +8,7 @@ urlpatterns = [
     path('login/', views.Login.as_view(), name='login'),
     path('logout/', views.Logout.as_view(), name='logout'),
     path('mypage/<int:pk>/', views.MypageView.as_view(), name='mypage'),
+    path('mypage/<int:pk>/<int:year>/<int:month>/', views.MypageView.as_view(), name='mypage'),
     path('search_input/<int:pk>/', views.SearchInput.as_view(), name='search_input'),
     path('search_complete/<int:pk>/<int:id>/', views.SearchComplete.as_view(), name='search_complete'),
 ]

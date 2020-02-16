@@ -14,10 +14,10 @@
     {% endif %}
 </div>
 
-<div class="container pt-3 pb-5">
+<div class="container pt-2 pb-2">
+    <h3 class="text-muted"> 食事ログの入力 </h3>
 
     <div class="row mt-3 mb-5 text-center">
-        
         <button type="button" disabled class="btn btn-lg btn-info ml-4 mt-3"
         onclick="location.href=''">
             <i class="fas fa-receipt text-white"></i>　レシート
@@ -37,8 +37,66 @@
         onclick="location.href=''">
             <i class="fas fa-history text-white"></i>　履歴入力
         </button>
-
     </div>
 </div>
+
+<div class="container table-responsive pt-2 pb-5">
+    <h3 class="text-muted"> 食事ログカレンダー </h3>
+
+    <div class="text-center">
+        <a class="pr-3" href="{% url 'lognuts:mypage' user.pk month_previous.year month_previous.month %}">前月</a>
+        {{ month_current | date:"Y年m月" }}
+        <a class="pl-3" href="{% url 'lognuts:mypage' user.pk month_next.year month_next.month %}">次月</a>
+    </div>
+
+    <table class="table">
+        <thead>
+        <tr>
+            {% for w in week_names %}
+                <th>{{ w }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for week in month_days %}
+            <tr height="100">
+                {% for day in week %}
+                    {% if now == day %}
+                        <td class="table-info">
+                            {% else %}
+                        <td>
+                    {% endif %}
+
+                {% if month_current.month != day.month %}
+                    {{ day | date:"m/d" }}
+                {% else %}
+                    {{ day.day }}
+                {% endif %}
+
+                <!--パーソナルログをカレンダー上に表示-->
+                {% for p in PersonalLog %}
+                    {% if day.month == p.date.month and lastday != day.day %}
+                        {% if day.day == p.date.day and p.date.hour < tz_diff %}
+                            <p><a href="#">{{p.food_name}}{{i}}</a></p>
+                        {% elif day.day == p.date.day|add:1  and p.date.hour >= tz_diff %}
+                            <p><a href="#">{{p.food_name}}{{i}}</a></p>
+                        {% endif %}
+                    {% elif day.month == p.date.month|add:1 %}
+                        {% if month_lastday == p.date.day and day.day == 1 and p.date.hour >= tz_diff %}
+                            <p><a href="/health/date_detail/{{user.pk}}/{{day.year}}/{{day.month}}/{{day.day}}">{{p.food_name}}{{i}}</a></p>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                </td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <p>{{PersonalLog}}</p>
+</div>
+
 
 {% endblock content %}
