@@ -270,15 +270,10 @@ class NutsCulcMixin:
             remain_energie = remain_energie - latest_nut['energie']
             large_pfc_list = self.sort_large_diff(latest_pfc_diff)
             menu_tag_query = self.get_menu_tag_query()
-
-            print(latest_pfc_diff)
-
             #残りのエネルギーを超えず、メニュータグに合致した料理を抽出
             suggest_df = mealsout_df.query(
                 'calorie<{} & ({})'.format(remain_energie,menu_tag_query)
             )
-
-           
             if latest_pfc_diff['pfc_diff'] == 0:
                 #pfc_diff=0の時(すでに栄養バランスが良い場合には栄養バランスの良い食品を推薦)
                 suggest_foods = suggest_df.query(
@@ -300,6 +295,9 @@ class NutsCulcMixin:
                     pfc_diff = self.get_pfc_diff( after_pfc )
                     after_pfc_diff = {
                         'id':s_id, #dfのmergeに使用するidを辞書に追加
+                        'after_p':after_pfc['p'],
+                        'after_f':after_pfc['f'],
+                        'after_c':after_pfc['c'],
                         'after_p_diff':pfc_diff['p_diff'],
                         'after_f_diff':pfc_diff['f_diff'],
                         'after_c_diff':pfc_diff['c_diff'],
@@ -309,13 +307,26 @@ class NutsCulcMixin:
                     after_array.append(after_pfc_diff)
                 #推薦食品のdfに推薦後のpfc_diffのdfを内部結合する
                 suggest_df = pd.merge(suggest_df, pd.DataFrame.from_dict(after_array), on='id', how='inner')
-                print(pd.DataFrame.from_dict(after_array))
-                print(suggest_df)
-
-
-
-            
-        return 0
+                suggest_foods = suggest_df.sort_values('after_pfc_diff').head(settings.FOOD_SUGGESTION_NUM)
+        return suggest_foods
+    def get_top_suggestion(self, suggest_df):
+        nut_dict = {}
+        if suggest_df.empty: #推薦食品dfが空の時
+            pass
+        else:
+            row = suggest_df.head(1).to_dict(orient='list')
+            nut_dict = {
+                'food_name':row['food_name'].pop(),
+                'p':row['after_p'].pop(),
+                'f':row['after_f'].pop(),
+                'c':row['after_c'].pop(),
+            }
+        return nut_dict
+    def adjust_rate_minus_zero(self, arg_pfc):
+        print(arg_pfc)
+        if arg_pfc['c']<0:
+            arg_pfc['c'] = 0
+        return arg_pfc
 
 class TopView(generic.TemplateView):
     """Lognutsトップページ"""
@@ -342,8 +353,14 @@ class MypageView(OnlyYouMixin, WeekCalendarMixin, NutsCulcMixin, generic.Templat
             'f': settings.RADAR_F,
             'c': settings.RADAR_C
         }
-        #食事推薦に利用する
+        #推薦する食事のリスト
         context['suggestion_food_list'] = self.get_suggestion_food_list()
+        #１番目に推薦された食事の栄養情報を辞書として取得
+        context['top_suggestion_pfc'] = self.get_top_suggestion(context['suggestion_food_list'])
+
+        #pfcのrateのcが0以下の時,0に修正
+        context['today_pfc'] = self.adjust_rate_minus_zero(context['today_pfc'])
+        context['top_suggestion_pfc'] = self.adjust_rate_minus_zero(context['top_suggestion_pfc'])
         return context
 
 class Login(LoginView):

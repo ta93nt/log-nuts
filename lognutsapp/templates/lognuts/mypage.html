@@ -11,7 +11,7 @@
 
 <div class="container lead pt-3 pb-3">
     {% if user and not user.is_anonymous %}
-        <p>ようこそ</p>
+        <p>ようこそ {{user.get_full_name}} さん</p>
     {% else %}
         <p>ログインして下さい.</p>
     {% endif %}
@@ -45,20 +45,37 @@
 
 
 <div class="container pt-2 pb-2">
-    <h3 class="text-muted"> おすすめな食品 </h3>
-
+    <h3 class="text-muted"> あなたへのおすすめ </h3>
+    <ul>
+        {% for _,s in suggestion_food_list.iterrows %}
+        <li>{{ s.food_name }}</li>
+        {% endfor %}
+    </ul>
 </div>
 
 <div class="container pt-2 pb-2">
-    <h3 class="text-muted"> 食事ログの分析 </h3>
+    <h3 class="text-muted"> 食事の分析 </h3>
     <div class="row">
         <div class="col-md-6 pt-3 text-center">
-            <h5 class="text-muted">１週間のカロリー</h5>
-            <canvas id="chart_energie"></canvas>
+            <div class="card border-danger mt-3">
+                <div class="card-header text-white bg-danger ">
+                    <h4>1週間のカロリー</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="chart_energie"></canvas>
+                </div>
+            </div>
         </div>
+
         <div class="col-md-6 pt-3 text-center">
-            <h5 class="text-muted">今日の栄養バランス</h5>
-            <canvas id="chart_pfc" height="200"></canvas>
+            <div class="card border-info mt-3">
+                <div class="card-header text-white bg-info ">
+                    <h4>今日の栄養バランス</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="chart_pfc" height="200"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -149,19 +166,19 @@ var myChart = new Chart(ctx, {
     data: {
     labels: ['タンパク質(P)', '脂質(F)', '炭水化物(C)'],
     datasets: [
-    {% if user.experiment_group == 'A'%}
+    {% if top_suggestion_pfc.food_name != None %}
     {
-        label: '改善後のPFC比',
+        label: '改善後の栄養バランス',
         data: [
-        {{ suggestion_PFC.protein|escapejs }}/{{ radar_pfc_point.protein|escapejs }},
-        {{ suggestion_PFC.fat|escapejs }}/{{ radar_pfc_point.fat|escapejs }},
-        {{ suggestion_PFC.carbohydrate|escapejs }}/{{ radar_pfc_point.carbohydrate|escapejs }}
+        {{ top_suggestion_pfc.p|escapejs }}/{{ radar_pfc_point.p|escapejs }},
+        {{ top_suggestion_pfc.f|escapejs }}/{{ radar_pfc_point.f|escapejs }},
+        {{ top_suggestion_pfc.c|escapejs }}/{{ radar_pfc_point.c|escapejs }}
         ],
         backgroundColor: "rgba(81,204,204,0.6)"
     },
     {% endif %}
     {
-        label: '現在のPFC比',
+        label: '現在の栄養バランス',
         data: [
         {{ today_pfc.p|escapejs }} / {{ radar_pfc_point.p|escapejs }},
         {{ today_pfc.f|escapejs }} / {{ radar_pfc_point.f|escapejs }},
