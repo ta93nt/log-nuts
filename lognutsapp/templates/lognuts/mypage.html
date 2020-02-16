@@ -43,59 +43,52 @@
 <div class="container table-responsive pt-2 pb-5">
     <h3 class="text-muted"> 食事ログカレンダー </h3>
 
-    <div class="text-center">
-        <a class="pr-3" href="{% url 'lognuts:mypage' user.pk month_previous.year month_previous.month %}">前月</a>
-        {{ month_current | date:"Y年m月" }}
-        <a class="pl-3" href="{% url 'lognuts:mypage' user.pk month_next.year month_next.month %}">次月</a>
+    <div class="text-center pb-3">
+    <a class="pr-4" href="{% url 'lognuts:mypage' user.pk week_previous.year week_previous.month week_previous.day %}">
+    <button type="button" class="btn btn-info btn-xs"><i class="fas fa-angle-double-left"></i> 前の週</button>
+    </a>
+     {{ week_first | date:"m月d日" }}〜{{ week_last | date:"m月d日" }}
+    <a class="pl-4" href="{% url 'lognuts:mypage' user.pk week_next.year week_next.month week_next.day %}">
+    <button type="button" class="btn btn-info btn-xs">後の週 <i class="fas fa-angle-double-right"></i></button>
+    </a>
     </div>
 
     <table class="table">
         <thead>
         <tr>
-            {% for w in week_names %}
-                <th>{{ w }}</th>
+            {% for c in calendar_col %}
+                <th>{{ c }}</th>
             {% endfor %}
         </tr>
         </thead>
         <tbody>
-        {% for week in month_days %}
-            <tr height="100">
-                {% for day in week %}
-                    {% if now == day %}
-                        <td class="table-info">
-                            {% else %}
-                        <td>
-                    {% endif %}
-
-                {% if month_current.month != day.month %}
-                    {{ day | date:"m/d" }}
-                {% else %}
-                    {{ day.day }}
-                {% endif %}
-
-                <!--パーソナルログをカレンダー上に表示-->
-                {% for p in PersonalLog %}
-                    {% if day.month == p.date.month and lastday != day.day %}
-                        {% if day.day == p.date.day and p.date.hour < tz_diff %}
-                            <p><a href="#">{{p.food_name}}{{i}}</a></p>
-                        {% elif day.day == p.date.day|add:1  and p.date.hour >= tz_diff %}
-                            <p><a href="#">{{p.food_name}}{{i}}</a></p>
-                        {% endif %}
-                    {% elif day.month == p.date.month|add:1 %}
-                        {% if month_lastday == p.date.day and day.day == 1 and p.date.hour >= tz_diff %}
-                            <p><a href="/health/date_detail/{{user.pk}}/{{day.year}}/{{day.month}}/{{day.day}}">{{p.food_name}}{{i}}</a></p>
-                        {% endif %}
-                    {% endif %}
-                {% endfor %}
-
+        
+        {% for day in week_days %}
+            {% if now == day %}
+            <tr class="table-info">
+            {% else %}
+            <tr>
+            {% endif %}
+                <!--日付-->
+                <td>
+                {{ day | date:"m/d" }}
                 </td>
+                
+                <!--食事ログ-->
+                <td>
+                {% for p in PersonalLog %}
+                    {% if day.month == p.date.month and day.day == p.date.day %}
+                        {{p.food_name}}<br>
+                    {% endif %}
                 {% endfor %}
+                </td>
+
             </tr>
+
         {% endfor %}
+        
         </tbody>
     </table>
-
-    <p>{{PersonalLog}}</p>
 </div>
 
 

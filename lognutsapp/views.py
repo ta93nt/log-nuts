@@ -114,24 +114,23 @@ class WeekCalendarMixin(BaseCalendarMixin):
             date = datetime.date(year=int(year), month=int(month), day=int(day))
         else:
             date = datetime.date.today()
-            print('----dateはこちら{}----'.format(date))
         for week in self._calendar.monthdatescalendar(date.year, date.month):
             if date in week:  # 週ごとに取り出され、中身は全てdatetime.date型。該当の日が含まれていれば、それが今回表示すべき週です
                 return week
     def get_week_calendar(self):
         """週間カレンダー情報の入った辞書を返す"""
-        self.setup()
+        self.setup_calendar()
         days = self.get_week_days()
         first = days[0]
         last = days[-1]
         calendar_data = {
             'now': datetime.date.today(),
-            'days': days,
-            'previous': first - datetime.timedelta(days=7),
-            'next': first + datetime.timedelta(days=7),
+            'week_days': days,
+            'week_previous': first - datetime.timedelta(days=7),
+            'week_next': first + datetime.timedelta(days=7),
             'week_names': self.get_week_names(),
-            'first': first,
-            'last': last,
+            'week_first': first,
+            'week_last': last,
         }
         return calendar_data
 
@@ -139,14 +138,15 @@ class TopView(generic.TemplateView):
     """Lognutsトップページ"""
     template_name = 'lognuts/top.html' 
 
-class MypageView(OnlyYouMixin, MonthCalendarMixin, generic.TemplateView):
+class MypageView(OnlyYouMixin, WeekCalendarMixin, generic.TemplateView):
     """Lognutsマイページ"""
     model = User
     template_name = 'lognuts/mypage.html'
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        calendar_context = self.get_month_calendar()
+        calendar_context = self.get_week_calendar()
         context.update(calendar_context)
+        context['calendar_col'] = ['日付', '食事ログ']
         context['PersonalLog'] = PersonalLog.objects.values('date', 'food_name').filter(
             user=self.request.user
         )
