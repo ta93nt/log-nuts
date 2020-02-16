@@ -182,21 +182,18 @@ class NutsCulcMixin:
         return latest_nut
 
     def get_pfc(self, arg_nut):
-        """引数の栄養素からPFCの比率を算出する"""
+        """
+        引数の栄養素からPFCの比率を算出する
+        必要条件: 辞書型で energie, protein, fat が存在している
+        """
         if arg_nut['energie'] != None: #引数の栄養素データがある時
             #p_rateを計算
-            p_rate = Decimal(
-                arg_nut['protein']*4/arg_nut['energie']*100
-            ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            p_rate = dec_conv(arg_nut['protein']*4/arg_nut['energie']*100)
             #f_rateを計算
-            f_rate = Decimal(
-                arg_nut['fat']*9/arg_nut['energie']*100
-            ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            f_rate = dec_conv(arg_nut['fat']*9/arg_nut['energie']*100)
             #c_rateを計算
-            c_rate = Decimal(
-                100 - p_rate - f_rate
-            ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            #
+            c_rate = dec_conv(100 - p_rate - f_rate)
+            #返り値の辞書を作成
             return_pfc = {'p':p_rate, 'f':f_rate, 'c':c_rate }
         else:
             return_pfc = {'p':None, 'f':None, 'c':None}
@@ -274,14 +271,46 @@ class NutsCulcMixin:
             large_pfc_list = self.sort_large_diff(latest_pfc_diff)
             menu_tag_query = self.get_menu_tag_query()
 
+            print(latest_pfc_diff)
+
             #残りのエネルギーを超えず、メニュータグに合致した料理を抽出
             suggest_df = mealsout_df.query(
                 'calorie<{} & ({})'.format(remain_energie,menu_tag_query)
             )
 
-            print(suggest_df)
-
-
+           
+            if latest_pfc_diff['pfc_diff'] == 0:
+                #pfc_diff=0の時(すでに栄養バランスが良い場合には栄養バランスの良い食品を推薦)
+                suggest_foods = suggest_df.query(
+                    "pfc_diff==0"
+                ).sample(n=settings.FOOD_SUGGESTION_NUM)
+            else:
+                #pfc_diff≠0の時(栄養バランスを整える食品を推薦)
+                after_array = [] #推薦候補のdfに追加するdfを格納する配列
+                for s_id, ene, pro, fat, car in zip(suggest_df['id'], suggest_df['calorie'], suggest_df['protein'], suggest_df['fat'], suggest_df['carbohydrate']):
+                    #推薦後(推薦する栄養 + 直近の栄養)の栄養を計算
+                    after_nut = {}
+                    after_nut['energie'] =      dec_conv(ene) + latest_nut['energie']
+                    after_nut['protein'] =      dec_conv(pro) + latest_nut['protein']
+                    after_nut['fat'] =          dec_conv(fat) + latest_nut['fat']
+                    after_nut['carbohydrate'] = dec_conv(car) + latest_nut['carbohydrate']
+                    #推薦後(推薦食品を食べた場合)のPFCの比率を取得
+                    after_pfc = self.get_pfc( after_nut )
+                    #推薦後のPFC_diffを取得
+                    pfc_diff = self.get_pfc_diff( after_pfc )
+                    after_pfc_diff = {
+                        'id':s_id, #dfのmergeに使用するidを辞書に追加
+                        'after_p_diff':pfc_diff['p_diff'],
+                        'after_f_diff':pfc_diff['f_diff'],
+                        'after_c_diff':pfc_diff['c_diff'],
+                        'after_pfc_diff':pfc_diff['pfc_diff']
+                    }
+                    #処理の高速化のために配列に格納 -> df変換をする
+                    after_array.append(after_pfc_diff)
+                #推薦食品のdfに推薦後のpfc_diffのdfを内部結合する
+                suggest_df = pd.merge(suggest_df, pd.DataFrame.from_dict(after_array), on='id', how='inner')
+                print(pd.DataFrame.from_dict(after_array))
+                print(suggest_df)
 
 
 
