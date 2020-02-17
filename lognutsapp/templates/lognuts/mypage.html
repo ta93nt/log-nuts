@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- グラフを表示するChart.jsを読み込む -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.bundle.min.js"></script>
+
+<div class="container text-muted pt-3 pb-3">
+    <h2>マイページ</h2>
+</div>
+
+<div class="container lead pt-3 pb-3">
+    {% if user and not user.is_anonymous %}
+        <p>ようこそ {{user.get_full_name}} さん</p>
+    {% else %}
+        <p>ログインして下さい.</p>
+    {% endif %}
+</div>
+
+<div class="container pt-2 pb-2">
+    <h3 class="text-muted"> 食事ログの入力 </h3>
+
+    <div class="row mt-3 mb-5 text-center">
+        <button type="button" disabled class="btn btn-lg btn-info ml-4 mt-3"
+        onclick="location.href=''">
+            <i class="fas fa-receipt text-white"></i>　レシート
+        </button>
+
+        <button type="button" class="btn btn-lg btn-info ml-4 mt-3"
+        onclick="location.href='{% url 'lognuts:search_input' user.pk %}'">
+            <i class="fas fa-search text-white"></i>　検索入力
+        </button>
+
+        <button type="button" class="btn btn-lg btn-info ml-4 mt-3"
+        onclick="location.href=''">
+            <i class="fas fa-pen text-white"></i>　手動入力
+        </button>
+
+        <button type="button" class="btn btn-lg btn-info ml-4 mt-3"
+        onclick="location.href=''">
+            <i class="fas fa-history text-white"></i>　履歴入力
+        </button>
+    </div>
+</div>
+
+
+<div class="container pt-2 pb-2">
+    <h3 class="text-muted"> あなたへのおすすめ </h3>
+    <!--推薦食品のdfが空の時-->
+    {% if suggestion_food_list.empty %}
+        <p class="lead">現在推薦できる食品がありません。</p>
+    {% else %}
+        <ul>
+            {% for _,s in suggestion_food_list.iterrows %}
+            <li>{{ s.food_name }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</div>
+
+<div class="container pt-2 pb-2">
+    <h3 class="text-muted"> 食事の分析 </h3>
+    <div class="row">
+        <div class="col-md-6 pt-3 text-center">
+            <div class="card border-danger mt-3">
+                <div class="card-header text-white bg-danger ">
+                    <h4>1週間のカロリー</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="chart_energie"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 pt-3 text-center">
+            <div class="card border-info mt-3">
+                <div class="card-header text-white bg-info ">
+                    <h4>今日の栄養バランス</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="chart_pfc" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container table-responsive pt-2 pb-2" id="nutslog_calendar">
+    <h3 class="text-muted"> 食事ログカレンダー </h3>
+
+    <div class="text-center pb-3">
+    <a class="pr-4" href="{% url 'lognuts:mypage' user.pk week_previous.year week_previous.month week_previous.day %}#nutslog_calendar">
+    <button type="button" class="btn btn-info btn-xs"><i class="fas fa-angle-double-left"></i> 前の週</button>
+    </a>
+     {{ week_first | date:"m月d日" }}〜{{ week_last | date:"m月d日" }}
+    <a class="pl-4" href="{% url 'lognuts:mypage' user.pk week_next.year week_next.month week_next.day %}#nutslog_calendar">
+    <button type="button" class="btn btn-info btn-xs">後の週 <i class="fas fa-angle-double-right"></i></button>
+    </a>
+    </div>
+
+    <table class="table">
+        <thead>
+        <tr>
+            {% for c in calendar_col %}
+                <th>{{ c }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        
+        {% for day in week_days %}
+            <!--trは今日の日付なら色付け-->
+            {% if now == day %}
+            <tr class="table-info">
+            {% else %}
+            <tr>
+            {% endif %}
+                <!--日付-->
+                <td>
+                {{ day | date:"m/d" }}
+                </td>
+                
+                <!--食事ログ-->
+                <td>
+                {% for p in PersonalLog %}
+                    {% if day.month == p.date.month and day.day == p.date.day %}
+                        {{p.food_name}}<br>
+                    {% endif %}
+                {% endfor %}
+                </td>
+            </tr>
+
+        {% endfor %}
+        
+        </tbody>
+    </table>
+</div>
+
+<!--１週間のカロリー(Energie)棒グラフ -->
+<script>
+var ctx = document.getElementById("chart_energie").getContext('2d');
+var myChart = new Chart(ctx, {
+    responsive : true,
+    scaleLabel: "<%=value%> kcal",
+    type: 'bar',
+    data: {
+            labels: ["-6day", "-5day", "-4day", "-3day", "-2day", "-1day", "today"],
+            datasets: [{
+                label: '摂取したカロリー',
+                data: [
+                    {% for w in toweek_nut_list %}
+                    {% if w.energie is None %}
+                        0,
+                    {% else %}
+                        {{w.energie}},
+                    {% endif %}
+                    {% endfor %}
+                ],
+                backgroundColor: "rgba(230,57,70,0.6)"
+            }]
+        },
+    }
+);
+</script>
+
+<!-- 三大栄養素(PFC)のレーダーチャート -->
+<script>
+var ctx = document.getElementById('chart_pfc').getContext('2d');
+var myChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+    labels: ['タンパク質(P)', '脂質(F)', '炭水化物(C)'],
+    datasets: [
+    {% if top_suggestion_pfc.food_name != None %}
+    {
+        label: '改善後の栄養バランス',
+        data: [
+        {{ top_suggestion_pfc.p|escapejs }}/{{ radar_pfc_point.p|escapejs }},
+        {{ top_suggestion_pfc.f|escapejs }}/{{ radar_pfc_point.f|escapejs }},
+        {{ top_suggestion_pfc.c|escapejs }}/{{ radar_pfc_point.c|escapejs }}
+        ],
+        backgroundColor: "rgba(81,204,204,0.6)"
+    },
+    {% endif %}
+    {
+        label: '現在の栄養バランス',
+        data: [
+        {{ today_pfc.p|escapejs }} / {{ radar_pfc_point.p|escapejs }},
+        {{ today_pfc.f|escapejs }} / {{ radar_pfc_point.f|escapejs }},
+        {{ today_pfc.c|escapejs }} / {{ radar_pfc_point.c|escapejs }}
+        ],
+        backgroundColor: "rgba(230,57,70,0.6)"
+    }
+    ]
+    }
+});
+</script>
+
+{% endblock content %}
+

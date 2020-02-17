@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import os
 import environ #環境変数をファイルから読み込む
+from decimal import Decimal
 
 env = environ.Env()
 env.read_env('.env')
@@ -35,12 +36,14 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'lognutsapp.apps.LognutsappConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'bootstrap4', #レスポンシブデザイン導入のため
 ]
 
 MIDDLEWARE = [
@@ -66,6 +69,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+            ],
+            'builtins':[ 
+                'bootstrap4.templatetags.bootstrap4', #レスポンシブデザイン対応
             ],
         },
     },
@@ -111,18 +117,59 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ja'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Tokyo'
 
 USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+#ログイン画面のURL
+LOGIN_URL = 'lognuts:login'
+#ログイン後に遷移する画面のURL
+LOGIN_REDIRECT_URL='lognuts:top'
+#ログアウト後に遷移する画面のURL
+LOGOUT_REDIRECT_URL='lognuts:top'
+
+#mealsout_nuts_DBのURL
+MEALSOUT_NUTS_URL='lognutsapp/static/lognuts/csv/mealsout_nuts.csv'
+
+#PFCのレーダーチャートのPFCの基準値
+RADAR_P = Decimal(16.5)
+RADAR_F = Decimal(25)
+RADAR_C = Decimal(57.5)
+
+#推薦する食品の数
+FOOD_SUGGESTION_NUM = 5
+#推薦に使用する食品の摂取時刻(n時間以内に食べた食品を使って推薦)
+SUGGESTION_HOUR = 24
+
+"""
+栄養所要量の推奨摂取量の設定(生活運動強度が[適度]の男性の基準値)
+"""
+#エネルギー
+ENERGIE_BORDER = 2650
+
+#タンパク質
+P_RATE_MAX = 20
+P_RATE_MIN = 13
+#脂質
+F_RATE_MAX = 20
+F_RATE_MIN = 30
+#炭水化物
+C_RATE_MAX = 50
+C_RATE_MIN = 65
+
+#推薦時に読み込むメニュータグリスト
+MENU_TAG_LIST = [
+    0,1,2,3
+]

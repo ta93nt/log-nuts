@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="janbotron-fluid top-image background-lighten ">
+    <form action="" method="POST">
+        <div class="col-md-6 offset-md-3 pt-5 pb-5">
+            <div class="card">
+                <div class="card-body">
+                    {{ form.non_field_errors }}
+                    {% for field in form %}
+                        {{ field }}
+                        {{ field.errors }}
+                        <hr>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-success btn-lg btn-block" >ログイン</button>
+                    <input type="hidden" name="next" value="{{ next }}" />
+                    {% csrf_token %}
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% endblock content %}
