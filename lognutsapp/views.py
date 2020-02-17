@@ -306,13 +306,21 @@ class NutsCulcMixin:
                     #処理の高速化のために配列に格納 -> df変換をする
                     after_array.append(after_pfc_diff)
                 #推薦食品のdfに推薦後のpfc_diffのdfを内部結合する
-                suggest_df = pd.merge(suggest_df, pd.DataFrame.from_dict(after_array), on='id', how='inner')
-                suggest_foods = suggest_df.sort_values('after_pfc_diff').head(settings.FOOD_SUGGESTION_NUM)
+                if len(suggest_df.index) > 0 :
+                    suggest_df = pd.merge(suggest_df, pd.DataFrame.from_dict(after_array), on='id', how='inner')
+                    suggest_foods = suggest_df.sort_values('after_pfc_diff').head(settings.FOOD_SUGGESTION_NUM)
+                else:
+                    suggest_foods = suggest_df
         return suggest_foods
     def get_top_suggestion(self, suggest_df):
         nut_dict = {}
         if suggest_df.empty: #推薦食品dfが空の時
-            pass
+            nut_dict = {
+                'food_name':None,
+                'p':None,
+                'f':None,
+                'c':None
+            }
         else:
             row = suggest_df.head(1).to_dict(orient='list')
             nut_dict = {
@@ -323,9 +331,8 @@ class NutsCulcMixin:
             }
         return nut_dict
     def adjust_rate_minus_zero(self, arg_pfc):
-        print(arg_pfc)
-        if arg_pfc['c']<0:
-            arg_pfc['c'] = 0
+        if arg_pfc['c'] is not None:
+            if arg_pfc['c']<0 : arg_pfc['c'] = 0 
         return arg_pfc
 
 class TopView(generic.TemplateView):
@@ -357,6 +364,8 @@ class MypageView(OnlyYouMixin, WeekCalendarMixin, NutsCulcMixin, generic.Templat
         context['suggestion_food_list'] = self.get_suggestion_food_list()
         #１番目に推薦された食事の栄養情報を辞書として取得
         context['top_suggestion_pfc'] = self.get_top_suggestion(context['suggestion_food_list'])
+
+        print('top_sg : {}'.format(context['top_suggestion_pfc']))
 
         #pfcのrateのcが0以下の時,0に修正
         context['today_pfc'] = self.adjust_rate_minus_zero(context['today_pfc'])

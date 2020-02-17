@@ -46,11 +46,16 @@
 
 <div class="container pt-2 pb-2">
     <h3 class="text-muted"> あなたへのおすすめ </h3>
-    <ul>
-        {% for _,s in suggestion_food_list.iterrows %}
-        <li>{{ s.food_name }}</li>
-        {% endfor %}
-    </ul>
+    <!--推薦食品のdfが空の時-->
+    {% if suggestion_food_list.empty %}
+        <p class="lead">現在推薦できる食品がありません。</p>
+    {% else %}
+        <ul>
+            {% for _,s in suggestion_food_list.iterrows %}
+            <li>{{ s.food_name }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 </div>
 
 <div class="container pt-2 pb-2">
