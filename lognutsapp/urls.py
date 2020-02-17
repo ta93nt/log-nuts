@@ -11,4 +11,5 @@ urlpatterns = [
     path('mypage/<int:pk>/<int:year>/<int:month>/<int:day>/', views.MypageView.as_view(), name='mypage'),
     path('search_input/<int:pk>/', views.SearchInput.as_view(), name='search_input'),
     path('search_complete/<int:pk>/<int:id>/', views.SearchComplete.as_view(), name='search_complete'),
+    path('manual_input/<int:pk>/', views.ManualInput.as_view(), name='manual_input'),
 ]
