@@ -133,6 +133,37 @@ class WeekCalendarMixin(BaseCalendarMixin):
         }
         return calendar_data
 
+class ContextMixin:
+    def get_personal_log_columns(self):
+        columns = [
+            'データ挿入日時', 
+            'レストラン名', 
+            'メニュー名', 
+            'サイズ', 
+            'カロリー', 
+            '炭水化物', 
+            'タンパク質', 
+            '脂質', 
+            '食塩相当量'
+        ]
+        return columns
+    def get_personal_log_from_post(self, post):
+        """
+        リクエストのPOSTを受け取り、
+        食事ログを作成して返す
+        """
+        p_log = PersonalLog()
+        p_log.user = self.request.user
+        p_log.restaurant = post['restaurant']
+        p_log.size = post['size']
+        p_log.food_name = post['food_name']
+        p_log.energie = post['energie']
+        p_log.carbohydrate = post['carbohydrate']
+        p_log.protein = post['protein']
+        p_log.fat = post['fat']
+        p_log.salt = post['salt']
+        return p_log
+
 """
 栄養素計算のMixIn
 """
@@ -373,8 +404,6 @@ class MypageView(OnlyYouMixin, WeekCalendarMixin, NutsCulcMixin, generic.Templat
         #１番目に推薦された食事の栄養情報を辞書として取得
         context['top_suggestion_pfc'] = self.get_top_suggestion(context['suggestion_food_list'])
 
-        print('top_sg : {}'.format(context['top_suggestion_pfc']))
-
         #pfcのrateのcが0以下の時,0に修正
         context['today_pfc'] = self.adjust_rate_minus_zero(context['today_pfc'])
         context['top_suggestion_pfc'] = self.adjust_rate_minus_zero(context['top_suggestion_pfc'])
@@ -413,7 +442,7 @@ class SearchInput(OnlyYouMixin, generic.FormView):
         context['search_foods'] = mealsout_df
         return render(self.request, 'lognuts/search_list.html', context)
 
-class SearchComplete(OnlyYouMixin, generic.TemplateView):
+class SearchComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
     """フォームの内容をDBに格納して、結果を表示する"""
     template_name = 'lognuts/search_complete.html'
 
@@ -421,9 +450,7 @@ class SearchComplete(OnlyYouMixin, generic.TemplateView):
         context = super().get_context_data(**kwargs)
         #外食食品DBをNaN->''としてデータフレーム化
         mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL).fillna('')
-        context['columns'] = [
-            'データ挿入日時', 'レストラン名', 'メニュー名', 'サイズ', 'カロリー', '炭水化物', 'タンパク質', '脂質', '食塩相当量'
-        ]
+        context['columns'] = self.get_personal_log_columns()
         if self.kwargs['id']:
             #合致したレコードをpandas seriesとして取り出す
             input_record =  mealsout_df[ (mealsout_df['id'] == self.kwargs['id']) ].iloc[0]
@@ -441,9 +468,7 @@ class SearchComplete(OnlyYouMixin, generic.TemplateView):
             p_log.save()
         return context
 
-
-
-class ManualInput(OnlyYouMixin, generic.FormView):
+class ManualInput(OnlyYouMixin, ContextMixin, generic.FormView):
     """手動入力フォームからの入力を扱う"""
     template_name = 'lognuts/manual_input.html'
     form_class = ManualForm
@@ -452,31 +477,22 @@ class ManualInput(OnlyYouMixin, generic.FormView):
         return super().form_invalid(form)
     def form_valid(self, form, **kwargs):
         context = super().get_context_data(**kwargs)
-        p_log = PersonalLog()
-        p_log.user = self.request.user
-        p_log.restaurant = form['restaurant'].value()
-        p_log.size = form['size'].value()
-        p_log.food_name = form['food_name'].value()
-        p_log.energie = form['energie'].value()
-        p_log.carbohydrate = form['carbohydrate'].value()
-        p_log.protein = form['protein'].value()
-        p_log.fat = form['fat'].value()
-        p_log.salt = form['salt'].value()
-        p_log.save()
+        post = self.request.POST
+        self.request.session['post'] = self.request.POST #セッションにPOSTデータを保存
+        context['p_log'] = self.get_personal_log_from_post(post)
+        context['columns'] = self.get_personal_log_columns()
+        return render(self.request, 'lognuts/manual_confirm.html', context)
 
-        """
-        #外食食品DBをNaN->''としてデータフレーム化
-        mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL).fillna('')
-        if form['store'].value():
-            #フォームのstoreがある場合、文字列を含むレコード抽出
-            mealsout_df = mealsout_df[ mealsout_df['store_name'].str.contains(form['store'].value()) ]
-        if form['food'].value():
-            #フォームのfoodがある場合、文字列を含むレコード抽出
-            mealsout_df = mealsout_df[ mealsout_df['food_name'].str.contains(form['food'].value()) ]
-        if form['size'].value():
-            #フォームのsizeがある場合、文字列を含むレコード抽出
-            mealsout_df = mealsout_df[ mealsout_df['food_size'].str.contains(form['size'].value()) ]
-        context['columns'] = ['レストラン名', '食品名', 'サイズ']
-        context['search_foods'] = mealsout_df
-        """
-        return render(self.request, 'lognuts/search_list.html', context)
+class ManualComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
+    """フォームの内容をDBに格納して、結果を表示する"""
+    template_name = 'lognuts/manual_complete.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'post' in self.request.session:
+            session_post = self.request.session['post']
+            p_log = self.get_personal_log_from_post(session_post)
+            p_log.save()
+            context['p_log'] = p_log
+            context['columns'] = self.get_personal_log_columns()
+        return context
