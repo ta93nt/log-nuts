@@ -14,4 +14,5 @@ urlpatterns = [
     path('manual_input/<int:pk>/', views.ManualInput.as_view(), name='manual_input'),
     path('manual_complete/<int:pk>/', views.ManualComplete.as_view(), name='manual_complete'),
     path('history_input/<int:pk>/', views.HistoryInput.as_view(), name='history_input'),
+    path('log_complete/<int:pk>/', views.LogComplete.as_view(), name='log_complete'),
 ]

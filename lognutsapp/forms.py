@@ -53,12 +53,12 @@ class ManualForm(forms.ModelForm):
             'protein':'タンパク質(g)',
             'fat':'脂質(g)',
             'carbohydrate':'炭水化物(g)',
-            'salt':'食塩相当量(g)s',
+            'salt':'食塩相当量(g)',
         }
 
 class HistoryForm(forms.Form):
     """履歴入力フォーム"""
-    personal_log_id = forms.ChoiceField( widget=forms.RadioSelect, required=True)
+    personal_log_id = forms.ChoiceField( widget=forms.CheckboxInput, required=True)
     def __init__(self, *args, **kwargs):
         super(HistoryForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():

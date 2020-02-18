@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from . import models
-from django.db.models import Sum
+from django.db.models import Sum, Q
 
 #ミックスイン
 from django.contrib.auth.mixins import (
@@ -149,39 +149,35 @@ class ContextMixin:
         return columns
     def get_personal_log_from_post(self, post):
         """
-        リクエストのPOSTを受け取り、
-        食事ログを作成して返す
+        postの食べた物データから
+        personal_logを作成して返す
         """
         p_log = PersonalLog()
         p_log.user = self.request.user
-        p_log.restaurant = post['restaurant']
-        p_log.size = post['size']
-        p_log.food_name = post['food_name']
-        p_log.energie = post['energie']
-        p_log.carbohydrate = post['carbohydrate']
-        p_log.protein = post['protein']
-        p_log.fat = post['fat']
-        p_log.salt = post['salt']
+        p_log.restaurant = post.restaurant
+        p_log.size = post.size
+        p_log.food_name = post.food_name
+        p_log.energie = post.energie
+        p_log.carbohydrate = post.carbohydrate
+        p_log.protein = post.protein
+        p_log.fat = post.fat
+        p_log.salt = post.salt
+        p_log.date = datetime.datetime.now()
         return p_log
-    def get_personal_log_from_queryset(self, queryset):
+    def convert_p_ids_to_p_logs(self, p_id_list):
         """
-        リクエストのPOSTを受け取り、
-        食事ログを作成して返す
+        PersonalLogのidのリストを引数にとり、
+        PersonalLogのリストを返す
         """
-        queryset = queryset.objects.all()
-        print(queryset)
-        p_log = PersonalLog()
-        p_log.user = self.request.user
-        print(queryset)
-        p_log.restaurant = queryset['restaurant']
-        p_log.size = queryset['size']
-        p_log.food_name = queryset['food_name']
-        p_log.energie = queryset['energie']
-        p_log.carbohydrate = queryset['carbohydrate']
-        p_log.protein = queryset['protein']
-        p_log.fat = queryset['fat']
-        p_log.salt = queryset['salt']
-        return p_log
+        p_log_list = []
+        for p_id in p_id_list:
+            post_p_log = PersonalLog.objects.filter(
+                user=self.request.user, id=p_id
+            ).first()
+            p_log = self.get_personal_log_from_post(post_p_log)
+            p_log_list.append(p_log)
+        return p_log_list
+
 
 """
 栄養素計算のMixIn
@@ -519,8 +515,9 @@ class ManualComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
 class HistoryInput(OnlyYouMixin, ContextMixin, generic.TemplateView):
 
     def get(self, request, *args, **kwargs):
-        self.template_name = 'lognuts/history_input.html'
+        self.template_name = 'lognuts/log_input_list.html'
         context = super().get_context_data(**kwargs)
+        context['page_title'] = '履歴入力 食品選択'
         context['personal_log_history'] = PersonalLog.objects.filter(
             user=self.request.user,
         ).order_by('date')
@@ -530,12 +527,34 @@ class HistoryInput(OnlyYouMixin, ContextMixin, generic.TemplateView):
     def post(self, request, *args, **kwargs):
         self.template_name = 'lognuts/history_confirm.html'
         context = super().get_context_data(**kwargs)
+        context['page_title'] = '履歴入力 確認'
+        self.request.session['post'] = self.request.POST #セッションにPOSTデータを保存
         post = self.request.POST
-        queryset = PersonalLog.objects.filter(
-            user=self.request.user, id=post['personal_log_id']
-        ).order_by('date')
-
-        p_log = self.get_personal_log_from_queryset(queryset['PersonalLog'])
-
-        print(p_log )
+        p_id_list = post.getlist('personal_log_id', None)
+        p_log_list = []
+        for p_id in p_id_list:
+            post_p_log = PersonalLog.objects.filter(id=p_id).first()
+            p_log = self.get_personal_log_from_post(post_p_log)
+            p_log_list.append(p_log)
+        context['p_log_list'] = p_log_list
+        self.request.session['p_id_list'] = p_id_list
+        print(self.request.session['post'])
         return self.render_to_response(context)
+
+class LogComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
+    """フォームの内容をDBに格納して、結果を表示する"""
+    template_name = 'lognuts/log_complete.html'
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = '履歴入力 完了'
+        if 'p_id_list' in self.request.session:
+            p_id_list = self.request.session['p_id_list']
+            #p_log_list = self.convert_p_ids_to_p_logs(p_id_list)
+            p_log_list = []
+            for p_id in p_id_list:
+                post_p_log = PersonalLog.objects.filter(id=p_id).first()
+                p_log = self.get_personal_log_from_post(post_p_log)
+                p_log.save()
+                p_log_list.append(p_log)
+            context['p_log_list'] = p_log_list
+        return context

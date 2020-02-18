@@ -3,14 +3,14 @@
 {% block content %}
 
 <div class="container text-muted pt-3 pb-3">
-    <h2><i class="fas fa-pen"></i> {{page_title}}</h2>
+    <h2><i class="fas fa-search"></i> {{page_title}}</h2>
     <!--プログレスバー-->
     <div class="progress mb-2">
-        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info w-30" role="progressbar" aria-valuenow="30"  aria-valuemin="0" aria-valuemax="100" style="width: 50%">
-        50%</div>
+        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info w-30" role="progressbar" aria-valuenow="30"  aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+        100%</div>
     </div>
 
-    <p>以下の食事ログをします。よろしいですか？</p>
+    <p>以下の食事ログを記録しました。</p>
 </div>
 
 
@@ -40,8 +40,8 @@
       </tbody>
     </table>
 
-    <a href="{% url 'lognuts:log_complete' user.pk %}">
-        <button type="submit" class="btn btn-danger ml-3">確定</button>
+    <a href="{% url 'lognuts:mypage' user.pk %}">
+        <button type="submit" class="btn btn-danger ml-3">マイページへ</button>
     </a>
 </div>
 
