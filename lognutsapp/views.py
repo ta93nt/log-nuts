@@ -133,6 +133,9 @@ class WeekCalendarMixin(BaseCalendarMixin):
         }
         return calendar_data
 
+"""
+context作成を補助するミックスイン
+"""
 class ContextMixin:
     def get_personal_log_columns(self):
         columns = [
@@ -149,35 +152,37 @@ class ContextMixin:
         return columns
     def get_personal_log_from_post(self, post):
         """
-        postの食べた物データから
-        personal_logを作成して返す
+        リクエストのPOSTを受け取り、
+        食事ログを作成して返す
         """
         p_log = PersonalLog()
         p_log.user = self.request.user
-        p_log.restaurant = post.restaurant
-        p_log.size = post.size
-        p_log.food_name = post.food_name
-        p_log.energie = post.energie
-        p_log.carbohydrate = post.carbohydrate
-        p_log.protein = post.protein
-        p_log.fat = post.fat
-        p_log.salt = post.salt
+        p_log.restaurant = post['restaurant']
+        p_log.size = post['size']
+        p_log.food_name = post['food_name']
+        p_log.energie = post['energie']
+        p_log.carbohydrate = post['carbohydrate']
+        p_log.protein = post['protein']
+        p_log.fat = post['fat']
+        p_log.salt = post['salt']
+        return p_log
+    def get_personal_log_from_queryset(self, query):
+        """
+        食べた物のクエリリストを受け取り、
+        食事ログを作成して返す
+        """
+        p_log = PersonalLog()
+        p_log.user = self.request.user
+        p_log.restaurant = query.restaurant
+        p_log.size = query.size
+        p_log.food_name = query.food_name
+        p_log.energie = query.energie
+        p_log.carbohydrate = query.carbohydrate
+        p_log.protein = query.protein
+        p_log.fat = query.fat
+        p_log.salt = query.salt
         p_log.date = datetime.datetime.now()
         return p_log
-    def convert_p_ids_to_p_logs(self, p_id_list):
-        """
-        PersonalLogのidのリストを引数にとり、
-        PersonalLogのリストを返す
-        """
-        p_log_list = []
-        for p_id in p_id_list:
-            post_p_log = PersonalLog.objects.filter(
-                user=self.request.user, id=p_id
-            ).first()
-            p_log = self.get_personal_log_from_post(post_p_log)
-            p_log_list.append(p_log)
-        return p_log_list
-
 
 """
 栄養素計算のMixIn
@@ -515,7 +520,7 @@ class ManualComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
 class HistoryInput(OnlyYouMixin, ContextMixin, generic.TemplateView):
 
     def get(self, request, *args, **kwargs):
-        self.template_name = 'lognuts/log_input_list.html'
+        self.template_name = 'lognuts/history_list.html'
         context = super().get_context_data(**kwargs)
         context['page_title'] = '履歴入力 食品選択'
         context['personal_log_history'] = PersonalLog.objects.filter(
@@ -533,28 +538,27 @@ class HistoryInput(OnlyYouMixin, ContextMixin, generic.TemplateView):
         p_id_list = post.getlist('personal_log_id', None)
         p_log_list = []
         for p_id in p_id_list:
-            post_p_log = PersonalLog.objects.filter(id=p_id).first()
-            p_log = self.get_personal_log_from_post(post_p_log)
+            p_log_queryset = PersonalLog.objects.filter(id=p_id).first()
+            p_log = self.get_personal_log_from_queryset(p_log_queryset)
             p_log_list.append(p_log)
         context['p_log_list'] = p_log_list
-        self.request.session['p_id_list'] = p_id_list
+        self.request.session['p_id_list'] = p_id_list #セッションに食事ログidリストを保存
         print(self.request.session['post'])
         return self.render_to_response(context)
 
 class LogComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
     """フォームの内容をDBに格納して、結果を表示する"""
-    template_name = 'lognuts/log_complete.html'
+    template_name = 'lognuts/history_complete.html'
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['page_title'] = '履歴入力 完了'
         if 'p_id_list' in self.request.session:
             p_id_list = self.request.session['p_id_list']
-            #p_log_list = self.convert_p_ids_to_p_logs(p_id_list)
             p_log_list = []
             for p_id in p_id_list:
-                post_p_log = PersonalLog.objects.filter(id=p_id).first()
-                p_log = self.get_personal_log_from_post(post_p_log)
-                p_log.save()
+                p_log_queryset = PersonalLog.objects.filter(id=p_id).first()
+                p_log = self.get_personal_log_from_queryset(p_log_queryset)
                 p_log_list.append(p_log)
+                p_log.save() #食事ログを保存
             context['p_log_list'] = p_log_list
         return context
