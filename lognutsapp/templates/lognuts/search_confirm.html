@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container text-muted pt-3 pb-3">
+    <h2><i class="fas fa-pen"></i> 履歴入力 確認</h2>
+    <!--プログレスバー-->
+    <div class="progress mb-2">
+        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info w-30" role="progressbar" aria-valuenow="30"  aria-valuemin="0" aria-valuemax="100" style="width: 50%">
+        50%</div>
+    </div>
+
+    <p>以下の食事ログをします。よろしいですか？</p>
+</div>
+
+
+<div class="container table-responsive pt-2 pb-4">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          {% for c in columns %}
+            <th scope="col" class="text-nowrap">{{ c }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for p_log in p_log_list %}
+          <tr>
+            <td>{{p_log.date}}</td>
+            <td>{{p_log.restaurant}}</td>
+            <td>{{p_log.food_name}}</td>
+            <td>{{p_log.size}}</td>
+            <td>{{p_log.energie}}</td>
+            <td>{{p_log.protein}}</td>
+            <td>{{p_log.fat}}</td>
+            <td>{{p_log.carbohydrate}}</td>
+            <td>{{p_log.salt}}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <a href="{% url 'lognuts:log_complete' user.pk %}">
+        <button type="submit" class="btn btn-danger ml-3">確定</button>
+    </a>
+</div>
+
+{% endblock content %}
