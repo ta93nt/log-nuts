@@ -9,6 +9,7 @@ urlpatterns = [
     path('logout/', views.Logout.as_view(), name='logout'),
     path('mypage/<int:pk>/', views.MypageView.as_view(), name='mypage'),
     path('mypage/<int:pk>/<int:year>/<int:month>/<int:day>/', views.MypageView.as_view(), name='mypage'),
+    path('diary/<int:pk>/<int:year>/<int:month>/<int:day>/', views.DiaryView.as_view(), name='diary'),
     path('search_input/<int:pk>/', views.SearchInput.as_view(), name='search_input'),
     path('search_confirm/<int:pk>/', views.SearchConfirm.as_view(), name='search_confirm'),
     path('search_complete/<int:pk>/', views.SearchComplete.as_view(), name='search_complete'),

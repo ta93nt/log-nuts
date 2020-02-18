@@ -144,9 +144,9 @@ class ContextMixin:
             'メニュー名', 
             'サイズ', 
             'カロリー', 
-            '炭水化物', 
             'タンパク質', 
             '脂質', 
+            '炭水化物', 
             '食塩相当量'
         ]
         return columns
@@ -567,6 +567,7 @@ class HistoryInput(OnlyYouMixin, ContextMixin, generic.TemplateView):
             p_log_queryset = PersonalLog.objects.filter(id=p_id).first()
             p_log = self.get_personal_log_from_queryset(p_log_queryset)
             p_log_list.append(p_log)
+        context['columns'] = self.get_personal_log_columns()
         context['p_log_list'] = p_log_list
         self.request.session['p_id_list'] = p_id_list #セッションに食事ログidリストを保存
         return self.render_to_response(context)
@@ -584,5 +585,61 @@ class HistoryComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
                 p_log = self.get_personal_log_from_queryset(p_log_queryset)
                 p_log_list.append(p_log)
                 p_log.save() #食事ログを保存
+            context['columns'] = self.get_personal_log_columns()
             context['p_log_list'] = p_log_list
         return context
+
+class DiaryView(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView):
+    """日付ごとのページ"""
+    template_name = 'lognuts/diary.html'
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['log_columns'] = self.get_personal_log_columns()
+        year,month,day = ( 2000+self.kwargs.get('year'),self.kwargs.get('month'),self.kwargs.get('day') ) 
+        select_date = datetime.datetime(year, month, day)
+        context['PersonalLog'] = PersonalLog.objects.values('date', 'food_name').filter(
+            user=self.request.user
+        )
+        context['day_p_log_list'] = PersonalLog.objects.values(
+            'date', 'restaurant', 'food_name', 'size', 'energie', 'carbohydrate',
+            'protein', 'fat', 'salt'
+        ).filter(
+            user=self.request.user, date__date=select_date
+        )
+        print(context['day_p_log_list'])
+        #栄養素の可視化に利用する
+        context['day_info'] = {
+            'year':year,
+            'month':month,
+            'day':day
+        }
+        context['day_nut'] = self.get_day_nut( select_date )
+        context['day_pfc'] = self.get_pfc( context['day_nut'] )
+        context['radar_pfc_point'] = {
+            'p': settings.RADAR_P,
+            'f': settings.RADAR_F,
+            'c': settings.RADAR_C
+        }
+        #pfcのrateのcが0以下の時,0に修正
+        context['day_pfc'] = self.adjust_rate_minus_zero(context['day_pfc'])
+        #context['day_p_log'] = self.get_day_personal_log()
+        """
+        context['toweek_nut_list'] = self.get_week_nut_list()
+        context['today_nut'] = self.get_day_nut( datetime.date.today() )
+        context['today_pfc'] = self.get_pfc( context['today_nut'] )
+        context['radar_pfc_point'] = {
+            'p': settings.RADAR_P,
+            'f': settings.RADAR_F,
+            'c': settings.RADAR_C
+        }
+        #推薦する食事のリスト
+        context['suggestion_food_list'] = self.get_suggestion_food_list()
+        #１番目に推薦された食事の栄養情報を辞書として取得
+        context['top_suggestion_pfc'] = self.get_top_suggestion(context['suggestion_food_list'])
+
+        #pfcのrateのcが0以下の時,0に修正
+        context['today_pfc'] = self.adjust_rate_minus_zero(context['today_pfc'])
+        context['top_suggestion_pfc'] = self.adjust_rate_minus_zero(context['top_suggestion_pfc'])
+        """
+        return context
+

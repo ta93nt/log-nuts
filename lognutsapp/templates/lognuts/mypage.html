@@ -117,7 +117,9 @@
             {% endif %}
                 <!--日付-->
                 <td>
-                {{ day | date:"m/d" }}
+                    <a href="{% url 'lognuts:diary' user.pk day|date:"y"  day|date:"m" day|date:"d" %}">
+                    {{ day | date:"m/d" }}
+                    </a>
                 </td>
                 
                 <!--食事ログ-->
