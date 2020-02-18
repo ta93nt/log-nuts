@@ -457,7 +457,7 @@ class Logout(LogoutView):
 class SearchInput(OnlyYouMixin, generic.FormView):
     """検索入力のフォームからの入力を扱う"""
     form_class = SearchForm
-    template_name = 'lognuts/search_input.html'
+    template_name = 'lognuts/log_input/search_input.html'
     def form_invalid(self, form):
         ''' バリデーションに失敗した時 '''
         return super().form_invalid(form)
@@ -476,7 +476,7 @@ class SearchInput(OnlyYouMixin, generic.FormView):
             mealsout_df = mealsout_df[ mealsout_df['food_size'].str.contains(form['size'].value()) ]
         context['columns'] = ['食べた', 'レストラン名', '食品名', 'サイズ']
         context['search_foods'] = mealsout_df
-        return render(self.request, 'lognuts/search_list.html', context)
+        return render(self.request, 'lognuts/log_input/search_list.html', context)
 
 class SearchConfirm(OnlyYouMixin, ContextMixin, generic.TemplateView):
     def post(self, request, *args, **kwargs):
@@ -493,11 +493,11 @@ class SearchConfirm(OnlyYouMixin, ContextMixin, generic.TemplateView):
         context['p_log_list'] = p_log_list
         context['columns'] = self.get_personal_log_columns()
         self.request.session['m_id_list'] = m_id_list #セッションに外食食品DBのidリストを保存
-        return render(self.request, 'lognuts/search_confirm.html', context)
+        return render(self.request, 'lognuts/log_input/search_confirm.html', context)
 
 class SearchComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
     """食事ログをDBに格納して、結果を表示する"""
-    template_name = 'lognuts/search_complete.html'
+    template_name = 'lognuts/log_input/search_complete.html'
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         #外食食品DBをNaN->''としてデータフレーム化
@@ -516,7 +516,7 @@ class SearchComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
 
 class ManualInput(OnlyYouMixin, ContextMixin, generic.FormView):
     """手動入力フォームからの入力を扱う"""
-    template_name = 'lognuts/manual_input.html'
+    template_name = 'lognuts/log_input/manual_input.html'
     form_class = ManualForm
     def form_invalid(self, form, **kwargs):
         ''' バリデーションに失敗した時 '''
@@ -527,11 +527,11 @@ class ManualInput(OnlyYouMixin, ContextMixin, generic.FormView):
         self.request.session['post'] = self.request.POST #セッションにPOSTデータを保存
         context['p_log'] = self.get_personal_log_from_post(post)
         context['columns'] = self.get_personal_log_columns()
-        return render(self.request, 'lognuts/manual_confirm.html', context)
+        return render(self.request, 'lognuts/log_input/manual_confirm.html', context)
 
 class ManualComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
     """フォームの内容をDBに格納して、結果を表示する"""
-    template_name = 'lognuts/manual_complete.html'
+    template_name = 'lognuts/log_input/manual_complete.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -547,7 +547,7 @@ class HistoryInput(OnlyYouMixin, ContextMixin, generic.TemplateView):
 
     def get(self, request, *args, **kwargs):
         """食事ログの履歴のリストを表示する"""
-        self.template_name = 'lognuts/history_list.html'
+        self.template_name = 'lognuts/log_input/history_list.html'
         context = super().get_context_data(**kwargs)
         context['personal_log_history'] = PersonalLog.objects.filter(
             user=self.request.user,
@@ -557,7 +557,7 @@ class HistoryInput(OnlyYouMixin, ContextMixin, generic.TemplateView):
 
     def post(self, request, *args, **kwargs):
         """食事ログの入力確認画面を表示する"""
-        self.template_name = 'lognuts/history_confirm.html'
+        self.template_name = 'lognuts/log_input/history_confirm.html'
         context = super().get_context_data(**kwargs)
         self.request.session['post'] = self.request.POST #セッションにPOSTデータを保存
         post = self.request.POST
@@ -573,7 +573,7 @@ class HistoryInput(OnlyYouMixin, ContextMixin, generic.TemplateView):
 
 class HistoryComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
     """フォームの内容をDBに格納して、結果を表示する"""
-    template_name = 'lognuts/history_complete.html'
+    template_name = 'lognuts/log_input/history_complete.html'
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if 'p_id_list' in self.request.session:
