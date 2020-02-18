@@ -2,7 +2,7 @@
 食事ログを入力することで、栄養バランスを整える食品の推薦や栄養素の可視化をしてくれるアプリです。
 
 # Demo
-![result](https://github.com/ta93nt/log-nuts/blob/master/demo/lognuts_200217.gif)
+![result](https://github.com/ta93nt/log-nuts/blob/media/demo/lognuts_200217.gif)
 
 ## Version
 - python 3.7.6
