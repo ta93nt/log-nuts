@@ -23,7 +23,7 @@ from .models import (
 
 #フォーム
 from .forms import (
-    LoginForm, SearchForm, ManualForm
+    LoginForm, SearchForm, ManualForm, HistoryForm
 )
 
 #ライブラリ
@@ -162,6 +162,25 @@ class ContextMixin:
         p_log.protein = post['protein']
         p_log.fat = post['fat']
         p_log.salt = post['salt']
+        return p_log
+    def get_personal_log_from_queryset(self, queryset):
+        """
+        リクエストのPOSTを受け取り、
+        食事ログを作成して返す
+        """
+        queryset = queryset.objects.all()
+        print(queryset)
+        p_log = PersonalLog()
+        p_log.user = self.request.user
+        print(queryset)
+        p_log.restaurant = queryset['restaurant']
+        p_log.size = queryset['size']
+        p_log.food_name = queryset['food_name']
+        p_log.energie = queryset['energie']
+        p_log.carbohydrate = queryset['carbohydrate']
+        p_log.protein = queryset['protein']
+        p_log.fat = queryset['fat']
+        p_log.salt = queryset['salt']
         return p_log
 
 """
@@ -496,3 +515,27 @@ class ManualComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
             context['p_log'] = p_log
             context['columns'] = self.get_personal_log_columns()
         return context
+
+class HistoryInput(OnlyYouMixin, ContextMixin, generic.TemplateView):
+
+    def get(self, request, *args, **kwargs):
+        self.template_name = 'lognuts/history_input.html'
+        context = super().get_context_data(**kwargs)
+        context['personal_log_history'] = PersonalLog.objects.filter(
+            user=self.request.user,
+        ).order_by('date')
+        context['columns'] = ['食べた', 'レストラン名', '食品名', 'サイズ']
+        return self.render_to_response(context)
+
+    def post(self, request, *args, **kwargs):
+        self.template_name = 'lognuts/history_confirm.html'
+        context = super().get_context_data(**kwargs)
+        post = self.request.POST
+        queryset = PersonalLog.objects.filter(
+            user=self.request.user, id=post['personal_log_id']
+        ).order_by('date')
+
+        p_log = self.get_personal_log_from_queryset(queryset['PersonalLog'])
+
+        print(p_log )
+        return self.render_to_response(context)
