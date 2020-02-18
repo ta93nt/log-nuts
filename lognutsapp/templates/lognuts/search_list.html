@@ -13,24 +13,41 @@
 </div>
 
 <div class="container table-responsive pt-2 pb-4">
-    <table class="table table-hover">
-      <thead>
-        <tr>
-          {% for c in columns %}
-            <th scope="col" class="text-nowrap">{{ c }}</th>
+    <form action="{% url 'lognuts:search_confirm' user.pk %}" method="post">
+      {% csrf_token %}
+      <button type="submit" id="submit_button" class="btn btn-danger mt-3 mb-5 ml-3">送信</button>
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            {% for c in columns %}
+              <th scope="col" class="text-nowrap">{{ c }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for index, row in search_foods.iterrows %}
+          <tr>
+              <td><input type="checkbox" name="mealout_id" value="{{row.id}}"></td>
+              <td>{{row.store_name}}</td>
+              <td>{{row.food_name}}</td>
+              <td>{{row.food_size}}</td>
+          </tr>
           {% endfor %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for index, row in search_foods.iterrows %}
-        <tr>
-            <td>{{row.store_name}}</td>
-            <td><a href="{% url 'lognuts:search_complete' user.pk row.id %}">{{row.food_name}}</a></td>
-            <td>{{row.food_size}}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
 </div>
+
+<!-- 行をクリックすると先頭のinputにチェックを入れる -->
+<script type="text/javascript">
+$(function(){
+    var $trList = $("tr:has(input)");			//trでinputタグをもつものを取得
+    $trList.each(function() {					//取得したtrタグそれぞれに処理を行う
+        var $input = $(this).find("input");		//trからinputタグを取得しておく。
+        $(this).click(function(){
+            $input.prop('checked',true);
+        });
+    });
+});
+</script>
 
 {% endblock content %}
