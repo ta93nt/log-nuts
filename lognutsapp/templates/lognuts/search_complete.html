@@ -24,6 +24,7 @@
         </tr>
       </thead>
       <tbody>
+        {% for p_log in p_log_list %}
         <tr>
           <td>{{p_log.date}}</td>
           <td>{{p_log.restaurant}}</td>
@@ -35,6 +36,7 @@
           <td>{{p_log.carbohydrate}}</td>
           <td>{{p_log.salt}}</td>
         </tr>
+        {% endfor %}
       </tbody>
     </table>
 

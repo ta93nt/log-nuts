@@ -166,7 +166,6 @@ class ContextMixin:
         p_log.fat = dec_conv(input_record.fat)
         p_log.salt = dec_conv(input_record.salt)
         return p_log
-
     def get_personal_log_from_post(self, post):
         """
         リクエストのPOSTを受け取り、
@@ -489,30 +488,30 @@ class SearchConfirm(OnlyYouMixin, ContextMixin, generic.TemplateView):
         p_log_list = []
         for m_id in m_id_list:
             input_record = mealsout_df[ (mealsout_df['id'] == int(m_id)) ].iloc[0]
-            print(input_record)
             p_log = self.get_personal_log_from_df(input_record)
             p_log_list.append(p_log)
         context['p_log_list'] = p_log_list
+        context['columns'] = self.get_personal_log_columns()
         self.request.session['m_id_list'] = m_id_list #セッションに外食食品DBのidリストを保存
         return render(self.request, 'lognuts/search_confirm.html', context)
 
 class SearchComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
-    """フォームの内容をDBに格納して、結果を表示する"""
+    """食事ログをDBに格納して、結果を表示する"""
     template_name = 'lognuts/search_complete.html'
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         #外食食品DBをNaN->''としてデータフレーム化
         mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL).fillna('')
-        context['columns'] = self.get_personal_log_columns()
         p_log_list = []
-        if self.kwargs['id']:
-            #合致したレコードをpandas seriesとして取り出す
-            input_record =  mealsout_df[ (mealsout_df['id'] == self.kwargs['id']) ].iloc[0]
-            p_log = self.get_personal_log_from_df(input_record)
-            
-            p_log.save()
-        context['p_log_list'] = p_log_list
+        if 'm_id_list' in self.request.session:
+            m_id_list = self.request.session['m_id_list']
+            for m_id in m_id_list:
+                input_record = mealsout_df[ (mealsout_df['id'] == int(m_id)) ].iloc[0]
+                p_log = self.get_personal_log_from_df(input_record)
+                p_log_list.append(p_log)
+                p_log.save() #食事ログを保存
+            context['p_log_list'] = p_log_list
+        context['columns'] = self.get_personal_log_columns()
         return context
 
 class ManualInput(OnlyYouMixin, ContextMixin, generic.FormView):
