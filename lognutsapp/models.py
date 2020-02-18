@@ -17,7 +17,7 @@ class SuggestionFoodsAnalysis(models.Model):
     #実際に食べたか
     action = models.CharField(max_length=30)
     # 食品名 : 文字列30桁
-    food_name = models.CharField(max_length=30)
+    food_name = models.CharField(max_length=50)
     # 店舗名 : 文字列30桁
     store = models.CharField(max_length=30)
     # サイズ : 文字列30桁
@@ -43,8 +43,8 @@ class PersonalLog(models.Model):
     """食事ログデータ"""
     #ユーザ
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    # 食品名 : 文字列30桁
-    food_name = models.CharField(max_length=30)
+    # 食品名 : 文字列50文字
+    food_name = models.CharField(max_length=50)
     # 店舗の電話番号
     tel = models.CharField(max_length=30, null=True, blank=True)
     # 店舗名

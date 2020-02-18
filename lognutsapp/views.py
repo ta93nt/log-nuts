@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.urls import reverse_lazy
 from . import models
-from django.db.models import Sum
+from django.db.models import Sum, Q
 
 #ミックスイン
 from django.contrib.auth.mixins import (
@@ -23,7 +23,7 @@ from .models import (
 
 #フォーム
 from .forms import (
-    LoginForm, SearchForm
+    LoginForm, SearchForm, ManualForm, HistoryForm
 )
 
 #ライブラリ
@@ -32,7 +32,6 @@ from decimal import Decimal, ROUND_HALF_UP
 import calendar
 import datetime
 from collections import deque
-
 
 """
 カスタムミックスイン
@@ -43,7 +42,6 @@ class OnlyYouMixin(UserPassesTestMixin):
     def test_func(self):
         user = self.request.user
         return user.pk == int(self.kwargs['pk']) or user.is_superuser
-
 
 class BaseCalendarMixin:
     """カレンダー関連Mixinの、基底クラス"""
@@ -134,6 +132,73 @@ class WeekCalendarMixin(BaseCalendarMixin):
             'week_last': last,
         }
         return calendar_data
+
+"""
+context作成を補助するミックスイン
+"""
+class ContextMixin:
+    def get_personal_log_columns(self):
+        columns = [
+            'データ挿入日時', 
+            'レストラン名', 
+            'メニュー名', 
+            'サイズ', 
+            'カロリー', 
+            '炭水化物', 
+            'タンパク質', 
+            '脂質', 
+            '食塩相当量'
+        ]
+        return columns
+    def get_personal_log_from_df(self, input_record):
+        """
+        データフレームと外食食品DBのidを受け取り、
+        食事ログを返す
+        """
+        p_log = PersonalLog()
+        p_log.user = self.request.user
+        p_log.restaurant = input_record.store_name
+        p_log.size = input_record.food_size
+        p_log.food_name = input_record.food_name
+        p_log.energie = input_record.calorie
+        p_log.carbohydrate = dec_conv(input_record.carbohydrate)
+        p_log.protein = dec_conv(input_record.protein)
+        p_log.fat = dec_conv(input_record.fat)
+        p_log.salt = dec_conv(input_record.salt)
+        return p_log
+    def get_personal_log_from_post(self, post):
+        """
+        リクエストのPOSTを受け取り、
+        食事ログを作成して返す
+        """
+        p_log = PersonalLog()
+        p_log.user = self.request.user
+        p_log.restaurant = post['restaurant']
+        p_log.size = post['size']
+        p_log.food_name = post['food_name']
+        p_log.energie = post['energie']
+        p_log.carbohydrate = post['carbohydrate']
+        p_log.protein = post['protein']
+        p_log.fat = post['fat']
+        p_log.salt = post['salt']
+        return p_log
+    def get_personal_log_from_queryset(self, query):
+        """
+        食べた物のクエリリストを受け取り、
+        食事ログを作成して返す
+        """
+        p_log = PersonalLog()
+        p_log.user = self.request.user
+        p_log.restaurant = query.restaurant
+        p_log.size = query.size
+        p_log.food_name = query.food_name
+        p_log.energie = query.energie
+        p_log.carbohydrate = query.carbohydrate
+        p_log.protein = query.protein
+        p_log.fat = query.fat
+        p_log.salt = query.salt
+        p_log.date = datetime.datetime.now()
+        return p_log
 
 """
 栄養素計算のMixIn
@@ -335,6 +400,16 @@ class NutsCulcMixin:
             if arg_pfc['c']<0 : arg_pfc['c'] = 0 
         return arg_pfc
 
+"""
+グローバル関数
+"""
+#floatを2桁のDecimal型に変換する
+def dec_conv(float_num):
+    decimal_num = Decimal(float_num).quantize(
+        Decimal('0.01'), rounding=ROUND_HALF_UP
+    )
+    return decimal_num
+
 class TopView(generic.TemplateView):
     """Lognutsトップページ"""
     template_name = 'lognuts/top.html' 
@@ -365,8 +440,6 @@ class MypageView(OnlyYouMixin, WeekCalendarMixin, NutsCulcMixin, generic.Templat
         #１番目に推薦された食事の栄養情報を辞書として取得
         context['top_suggestion_pfc'] = self.get_top_suggestion(context['suggestion_food_list'])
 
-        print('top_sg : {}'.format(context['top_suggestion_pfc']))
-
         #pfcのrateのcが0以下の時,0に修正
         context['today_pfc'] = self.adjust_rate_minus_zero(context['today_pfc'])
         context['top_suggestion_pfc'] = self.adjust_rate_minus_zero(context['top_suggestion_pfc'])
@@ -384,7 +457,7 @@ class Logout(LogoutView):
 class SearchInput(OnlyYouMixin, generic.FormView):
     """検索入力のフォームからの入力を扱う"""
     form_class = SearchForm
-    template_name = 'lognuts/search_input.html'
+    template_name = 'lognuts/log_input/search_input.html'
     def form_invalid(self, form):
         ''' バリデーションに失敗した時 '''
         return super().form_invalid(form)
@@ -401,43 +474,115 @@ class SearchInput(OnlyYouMixin, generic.FormView):
         if form['size'].value():
             #フォームのsizeがある場合、文字列を含むレコード抽出
             mealsout_df = mealsout_df[ mealsout_df['food_size'].str.contains(form['size'].value()) ]
-        context['columns'] = ['レストラン名', '食品名', 'サイズ']
+        context['columns'] = ['食べた', 'レストラン名', '食品名', 'サイズ']
         context['search_foods'] = mealsout_df
-        return render(self.request, 'lognuts/search_confirm.html', context)
+        return render(self.request, 'lognuts/log_input/search_list.html', context)
 
-class SearchComplete(OnlyYouMixin, generic.TemplateView):
-    template_name = 'lognuts/search_complete.html'
+class SearchConfirm(OnlyYouMixin, ContextMixin, generic.TemplateView):
+    def post(self, request, *args, **kwargs):
+        context = super().get_context_data(**kwargs)
+        #外食食品DBをNaN->''としてデータフレーム化
+        mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL).fillna('')
+        post = self.request.POST
+        m_id_list = post.getlist('mealout_id', None)
+        p_log_list = []
+        for m_id in m_id_list:
+            input_record = mealsout_df[ (mealsout_df['id'] == int(m_id)) ].iloc[0]
+            p_log = self.get_personal_log_from_df(input_record)
+            p_log_list.append(p_log)
+        context['p_log_list'] = p_log_list
+        context['columns'] = self.get_personal_log_columns()
+        self.request.session['m_id_list'] = m_id_list #セッションに外食食品DBのidリストを保存
+        return render(self.request, 'lognuts/log_input/search_confirm.html', context)
 
+class SearchComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
+    """食事ログをDBに格納して、結果を表示する"""
+    template_name = 'lognuts/log_input/search_complete.html'
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         #外食食品DBをNaN->''としてデータフレーム化
         mealsout_df = pd.read_csv(settings.MEALSOUT_NUTS_URL).fillna('')
-        context['columns'] = [
-            'データ挿入日時', 'レストラン名', 'メニュー名', 'サイズ', 'カロリー', '炭水化物', 'タンパク質', '脂質', '食塩相当量'
-        ]
-
-        if self.kwargs['id']:
-            #合致したレコードをpandas seriesとして取り出す
-            input_record =  mealsout_df[ (mealsout_df['id'] == self.kwargs['id']) ].iloc[0]
-            p_log = PersonalLog()
-            print(input_record.protein)
-            p_log.user = self.request.user
-            p_log.restaurant = input_record.store_name
-            p_log.size = input_record.food_size
-            p_log.food_name = input_record.food_name
-            p_log.energie = input_record.calorie
-            p_log.carbohydrate = dec_conv(input_record.carbohydrate)
-            p_log.protein = dec_conv(input_record.protein)
-            p_log.fat = dec_conv(input_record.fat)
-            p_log.salt = dec_conv(input_record.salt)
-            context['p_log'] = p_log
-            p_log.save()
-
+        p_log_list = []
+        if 'm_id_list' in self.request.session:
+            m_id_list = self.request.session['m_id_list']
+            for m_id in m_id_list:
+                input_record = mealsout_df[ (mealsout_df['id'] == int(m_id)) ].iloc[0]
+                p_log = self.get_personal_log_from_df(input_record)
+                p_log_list.append(p_log)
+                p_log.save() #食事ログを保存
+            context['p_log_list'] = p_log_list
+        context['columns'] = self.get_personal_log_columns()
         return context
 
-#floatを2桁のDecimal型に変換する
-def dec_conv(float_num):
-    decimal_num = Decimal(float_num).quantize(
-        Decimal('0.01'), rounding=ROUND_HALF_UP
-    )
-    return decimal_num
+class ManualInput(OnlyYouMixin, ContextMixin, generic.FormView):
+    """手動入力フォームからの入力を扱う"""
+    template_name = 'lognuts/log_input/manual_input.html'
+    form_class = ManualForm
+    def form_invalid(self, form, **kwargs):
+        ''' バリデーションに失敗した時 '''
+        return super().form_invalid(form)
+    def form_valid(self, form, **kwargs):
+        context = super().get_context_data(**kwargs)
+        post = self.request.POST
+        self.request.session['post'] = self.request.POST #セッションにPOSTデータを保存
+        context['p_log'] = self.get_personal_log_from_post(post)
+        context['columns'] = self.get_personal_log_columns()
+        return render(self.request, 'lognuts/log_input/manual_confirm.html', context)
+
+class ManualComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
+    """フォームの内容をDBに格納して、結果を表示する"""
+    template_name = 'lognuts/log_input/manual_complete.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'post' in self.request.session:
+            session_post = self.request.session['post']
+            p_log = self.get_personal_log_from_post(session_post)
+            p_log.save()
+            context['p_log'] = p_log
+            context['columns'] = self.get_personal_log_columns()
+        return context
+
+class HistoryInput(OnlyYouMixin, ContextMixin, generic.TemplateView):
+
+    def get(self, request, *args, **kwargs):
+        """食事ログの履歴のリストを表示する"""
+        self.template_name = 'lognuts/log_input/history_list.html'
+        context = super().get_context_data(**kwargs)
+        context['personal_log_history'] = PersonalLog.objects.filter(
+            user=self.request.user,
+        ).order_by('date')
+        context['columns'] = ['食べた', 'レストラン名', '食品名', 'サイズ']
+        return self.render_to_response(context)
+
+    def post(self, request, *args, **kwargs):
+        """食事ログの入力確認画面を表示する"""
+        self.template_name = 'lognuts/log_input/history_confirm.html'
+        context = super().get_context_data(**kwargs)
+        self.request.session['post'] = self.request.POST #セッションにPOSTデータを保存
+        post = self.request.POST
+        p_id_list = post.getlist('personal_log_id', None)
+        p_log_list = []
+        for p_id in p_id_list:
+            p_log_queryset = PersonalLog.objects.filter(id=p_id).first()
+            p_log = self.get_personal_log_from_queryset(p_log_queryset)
+            p_log_list.append(p_log)
+        context['p_log_list'] = p_log_list
+        self.request.session['p_id_list'] = p_id_list #セッションに食事ログidリストを保存
+        return self.render_to_response(context)
+
+class HistoryComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
+    """フォームの内容をDBに格納して、結果を表示する"""
+    template_name = 'lognuts/log_input/history_complete.html'
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if 'p_id_list' in self.request.session:
+            p_id_list = self.request.session['p_id_list']
+            p_log_list = []
+            for p_id in p_id_list:
+                p_log_queryset = PersonalLog.objects.filter(id=p_id).first()
+                p_log = self.get_personal_log_from_queryset(p_log_queryset)
+                p_log_list.append(p_log)
+                p_log.save() #食事ログを保存
+            context['p_log_list'] = p_log_list
+        return context

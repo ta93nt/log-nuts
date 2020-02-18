@@ -32,30 +32,15 @@
         </button>
 
         <button type="button" class="btn btn-lg btn-info ml-4 mt-3"
-        onclick="location.href=''">
+        onclick="location.href='{% url 'lognuts:manual_input' user.pk %}'">
             <i class="fas fa-pen text-white"></i>　手動入力
         </button>
 
         <button type="button" class="btn btn-lg btn-info ml-4 mt-3"
-        onclick="location.href=''">
+        onclick="location.href='{% url 'lognuts:history_input' user.pk %}'">
             <i class="fas fa-history text-white"></i>　履歴入力
         </button>
     </div>
-</div>
-
-
-<div class="container pt-2 pb-2">
-    <h3 class="text-muted"> あなたへのおすすめ </h3>
-    <!--推薦食品のdfが空の時-->
-    {% if suggestion_food_list.empty %}
-        <p class="lead">現在推薦できる食品がありません。</p>
-    {% else %}
-        <ul>
-            {% for _,s in suggestion_food_list.iterrows %}
-            <li>{{ s.food_name }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
 </div>
 
 <div class="container pt-2 pb-2">
@@ -75,7 +60,7 @@
         <div class="col-md-6 pt-3 text-center">
             <div class="card border-info mt-3">
                 <div class="card-header text-white bg-info ">
-                    <h4>今日の栄養バランス</h4>
+                    <h4>1日の栄養バランス</h4>
                 </div>
                 <div class="card-body">
                     <canvas id="chart_pfc" height="200"></canvas>
@@ -84,6 +69,21 @@
         </div>
     </div>
 </div>
+
+<div class="container pt-2 pb-2">
+    <h3 class="text-muted"> あなたへのおすすめ </h3>
+    <!--推薦食品のdfが空の時-->
+    {% if suggestion_food_list.empty %}
+        <p class="lead">現在推薦できる食品がありません。</p>
+    {% else %}
+        <ul>
+            {% for _,s in suggestion_food_list.iterrows %}
+            <li>{{ s.food_name }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</div>
+
 
 <div class="container table-responsive pt-2 pb-2" id="nutslog_calendar">
     <h3 class="text-muted"> 食事ログカレンダー </h3>

@@ -10,5 +10,10 @@ urlpatterns = [
     path('mypage/<int:pk>/', views.MypageView.as_view(), name='mypage'),
     path('mypage/<int:pk>/<int:year>/<int:month>/<int:day>/', views.MypageView.as_view(), name='mypage'),
     path('search_input/<int:pk>/', views.SearchInput.as_view(), name='search_input'),
-    path('search_complete/<int:pk>/<int:id>/', views.SearchComplete.as_view(), name='search_complete'),
+    path('search_confirm/<int:pk>/', views.SearchConfirm.as_view(), name='search_confirm'),
+    path('search_complete/<int:pk>/', views.SearchComplete.as_view(), name='search_complete'),
+    path('manual_input/<int:pk>/', views.ManualInput.as_view(), name='manual_input'),
+    path('manual_complete/<int:pk>/', views.ManualComplete.as_view(), name='manual_complete'),
+    path('history_input/<int:pk>/', views.HistoryInput.as_view(), name='history_input'),
+    path('history_complete/<int:pk>/', views.HistoryComplete.as_view(), name='history_complete'),
 ]
