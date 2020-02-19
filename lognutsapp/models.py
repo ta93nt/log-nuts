@@ -37,6 +37,15 @@ class SuggestionFoodsAnalysis(models.Model):
     # メニュータグ(日本語)
     str_tag = models.CharField(max_length=30)
 
+class FoodImage(models.Model):
+    """アップロードされたファイルを表すモデル"""
+    file = models.ImageField('画像ファイル')  # これが重要
+    #ユーザ
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    def __str__(self):
+        """ファイルのURLを返す"""
+        return self.file.url
+
 class PersonalLog(models.Model):
     class Meta:
          ordering = ['-date']
@@ -67,6 +76,8 @@ class PersonalLog(models.Model):
     fat = models.DecimalField(max_digits=8, decimal_places=2, null=True)
     # 食塩相当量
     salt = models.DecimalField(max_digits=8, decimal_places=2, null=True)
+    # 料理写真id
+    food_image_id = models.ForeignKey(FoodImage, on_delete=models.SET_NULL, null=True, blank=True)
     # データ挿入日時
     created_date = models.DateTimeField(default=timezone.now)
     def __str__(self):

@@ -1,9 +1,10 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
+from django.core.files.storage import default_storage
 from django.conf import settings
 #モデル
 from .models import (
-    PersonalLog
+    PersonalLog, FoodImage
 )
 
 class LoginForm(AuthenticationForm):
@@ -63,3 +64,8 @@ class HistoryForm(forms.Form):
         super(HistoryForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
+
+class ImageUploadForm(forms.ModelForm):
+    class Meta:
+        model = FoodImage
+        fields = '__all__'

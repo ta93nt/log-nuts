@@ -12,6 +12,7 @@
 - django-bootstrap4  1.1.1  
 - django-environ     0.4.5  
 - django-mathfilters 0.4.0
+- Pillow 2.2.2
 
 ## Usage
 `python manage.pyt runserver` を実行した後に、

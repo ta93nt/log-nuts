@@ -18,12 +18,12 @@ from django.contrib.auth.views import (
 
 #モデル
 from .models import (
-    Subject, PersonalLog
+    Subject, PersonalLog, FoodImage
 )
 
 #フォーム
 from .forms import (
-    LoginForm, SearchForm, ManualForm, HistoryForm
+    LoginForm, SearchForm, ManualForm, HistoryForm, ImageUploadForm
 )
 
 #ライブラリ
@@ -594,6 +594,9 @@ class DiaryView(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView)
     template_name = 'lognuts/diary.html'
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        #食事ログの画像
+        context['food_image_list'] = FoodImage
+        #１日の食事ログのを取得
         context['log_columns'] = self.get_personal_log_columns()
         year,month,day = ( 2000+self.kwargs.get('year'),self.kwargs.get('month'),self.kwargs.get('day') ) 
         select_date = datetime.datetime(year, month, day)
@@ -606,7 +609,6 @@ class DiaryView(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView)
         ).filter(
             user=self.request.user, date__date=select_date
         )
-        print(context['day_p_log_list'])
         #栄養素の可視化に利用する
         context['day_info'] = {
             'year':year,
@@ -622,24 +624,68 @@ class DiaryView(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView)
         }
         #pfcのrateのcが0以下の時,0に修正
         context['day_pfc'] = self.adjust_rate_minus_zero(context['day_pfc'])
-        #context['day_p_log'] = self.get_day_personal_log()
-        """
-        context['toweek_nut_list'] = self.get_week_nut_list()
-        context['today_nut'] = self.get_day_nut( datetime.date.today() )
-        context['today_pfc'] = self.get_pfc( context['today_nut'] )
-        context['radar_pfc_point'] = {
-            'p': settings.RADAR_P,
-            'f': settings.RADAR_F,
-            'c': settings.RADAR_C
-        }
-        #推薦する食事のリスト
-        context['suggestion_food_list'] = self.get_suggestion_food_list()
-        #１番目に推薦された食事の栄養情報を辞書として取得
-        context['top_suggestion_pfc'] = self.get_top_suggestion(context['suggestion_food_list'])
-
-        #pfcのrateのcが0以下の時,0に修正
-        context['today_pfc'] = self.adjust_rate_minus_zero(context['today_pfc'])
-        context['top_suggestion_pfc'] = self.adjust_rate_minus_zero(context['top_suggestion_pfc'])
-        """
         return context
 
+class ImageUpload(OnlyYouMixin, generic.CreateView):
+    model = FoodImage
+    form_class = ImageUploadForm
+    template_name = 'lognuts/image_upload.html'
+    def get_success_url(self):
+        ret_reverse = reverse_lazy('lognuts:image_add_food', kwargs={
+            'pk': self.kwargs['pk'],
+            'year': self.kwargs['year'],
+            'month': self.kwargs['month'],
+            'day': self.kwargs['day'],
+            })
+        return ret_reverse
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        year,month,day = ( 2000+self.kwargs.get('year'),self.kwargs.get('month'),self.kwargs.get('day') ) 
+        context['year'] =   year
+        context['month'] =  month
+        context['day'] =    day
+        return context
+
+
+class ImageAddFood(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView):
+    template_name = 'lognuts/image_add_food.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        year,month,day = ( self.kwargs.get('year'),self.kwargs.get('month'),self.kwargs.get('day') ) 
+        context['year'] =   year
+        context['month'] =  month
+        context['day'] =    day
+        select_date = datetime.datetime(year, month, day)
+        #該当する年月日の食事ログを取得
+        context['log_columns'] = self.get_personal_log_columns()
+        context['day_p_log_list'] = PersonalLog.objects.values(
+            'date', 'restaurant', 'food_name', 'size', 'energie', 'carbohydrate',
+            'protein', 'fat', 'salt'
+        ).filter(
+            user=self.request.user, date__date=select_date
+        )
+        print(context['day_p_log_list'], select_date)
+        return context
+
+class ImageComplete(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView):
+    template_name = 'lognuts/image_complete.html'
+    def form_valid(self, form):
+        download_url = form.upload()
+        context = {
+            'download_url': download_url,
+            'form': form,
+        }
+        #年月日情報を取得
+        year,month,day = ( 2000+self.kwargs.get('year'),self.kwargs.get('month'),self.kwargs.get('day') ) 
+        select_date = datetime.datetime(year, month, day)
+        #該当する年月日の食事ログを取得
+        context['log_columns'] = self.get_personal_log_columns()
+        context['day_p_log_list'] = PersonalLog.objects.values(
+            'date', 'restaurant', 'food_name', 'size', 'energie', 'carbohydrate',
+            'protein', 'fat', 'salt'
+        ).filter(
+            user=self.request.user, date__date=select_date
+        )
+
+        return self.render_to_response(context)

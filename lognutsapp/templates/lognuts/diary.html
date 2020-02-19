@@ -9,6 +9,20 @@
     <h2>Nuts Diary</h2>
 </div>
 
+
+<div class="container text-muted pt-3 pb-3">
+    <h3 class="pb-2">ギャラリー</h3>
+    {% if food_image_list %}
+        <a href="{{ download_url }}">{{ download_url }}</a>
+    {% endif %}
+
+    <a href="{% url 'lognuts:image_upload' user.pk year month day %}">
+        <button type="submit" class="btn btn-danger ml-3">
+            <i class="fas fa-camera"></i>　料理画像を追加
+        </button>
+    </a>
+</div>
+
 <div class="container table-responsive pt-2 pb-4">
     <h3 class="text-muted"> {{day_info.month}}/{{day_info.day}}の食事 </h3>
     <table class="table table-hover">
