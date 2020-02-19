@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone #タイムゾーンを扱うために追加
 
@@ -39,9 +39,47 @@ class SuggestionFoodsAnalysis(models.Model):
 
 class FoodImage(models.Model):
     """アップロードされたファイルを表すモデル"""
-    file = models.ImageField('画像ファイル')  # これが重要
+    #画像ファイル
+    file = models.ImageField('画像ファイル')
     #ユーザ
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    #画像のURL
+    url = models.CharField(max_length=300, null=True, blank=True)
+    #食べた日付
+    eat_date = models.DateField(default=timezone.now)
+    #アップロード日時
+    created_date = models.DateTimeField(default=timezone.now)
+    # エネルギー
+    energie = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # 炭水化物
+    carbohydrate = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # たんぱく質
+    protein = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # 脂質
+    fat = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # 食塩相当量
+    salt = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # タンパク質割合
+    p_rate = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # 脂質割合
+    f_rate = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # 炭水化物割合
+    c_rate = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # タンパク質の規定割合からの差
+    p_diff = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # 脂質の規定割合からの差
+    f_diff = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # 炭水化物の規定割合からの差
+    c_diff = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # PFC_diff
+    pfc_diff = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+
+    #データ削除時にメディアフォルダの画像も消す
+    @receiver(pre_delete)
+    def delete_image(sender, instance, **kwargs):
+        if instance.file:
+            instance.file.delete(False)
+    
     def __str__(self):
         """ファイルのURLを返す"""
         return self.file.url

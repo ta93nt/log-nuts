@@ -2,6 +2,7 @@ from django.views import generic
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
+from django.core.files.storage import default_storage
 from django.urls import reverse_lazy
 from . import models
 from django.db.models import Sum, Q
@@ -376,6 +377,8 @@ class NutsCulcMixin:
                     suggest_foods = suggest_df.sort_values('after_pfc_diff').head(settings.FOOD_SUGGESTION_NUM)
                 else:
                     suggest_foods = suggest_df
+        else:
+            suggest_foods =  pd.DataFrame()
         return suggest_foods
     def get_top_suggestion(self, suggest_df):
         nut_dict = {}
@@ -630,6 +633,8 @@ class ImageUpload(OnlyYouMixin, generic.CreateView):
     model = FoodImage
     form_class = ImageUploadForm
     template_name = 'lognuts/image_upload.html'
+    def get_initial(self):
+        return {'user': self.request.user}
     def get_success_url(self):
         ret_reverse = reverse_lazy('lognuts:image_add_food', kwargs={
             'pk': self.kwargs['pk'],
@@ -637,19 +642,20 @@ class ImageUpload(OnlyYouMixin, generic.CreateView):
             'month': self.kwargs['month'],
             'day': self.kwargs['day'],
             })
+        image_file = self.request.FILES.get('file')
+        self.request.session['image_pk'] = self.object.id
+        self.request.session['filename'] = default_storage.save(image_file.name, image_file)
+        self.request.session['fileurl']  = default_storage.url(self.request.session['filename'])
         return ret_reverse
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        year,month,day = ( 2000+self.kwargs.get('year'),self.kwargs.get('month'),self.kwargs.get('day') ) 
-        context['year'] =   year
-        context['month'] =  month
-        context['day'] =    day
+        context['year'] =   2000+self.kwargs.get('year')
+        context['month'] =  self.kwargs.get('month')
+        context['day'] =    self.kwargs.get('day')
         return context
-
 
 class ImageAddFood(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView):
     template_name = 'lognuts/image_add_food.html'
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         year,month,day = ( self.kwargs.get('year'),self.kwargs.get('month'),self.kwargs.get('day') ) 
@@ -657,35 +663,71 @@ class ImageAddFood(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateVi
         context['month'] =  month
         context['day'] =    day
         select_date = datetime.datetime(year, month, day)
+        #画像のURLをDBに追加
+        upload_image = FoodImage.objects.filter(
+            pk=self.request.session['image_pk']
+        ).first()
+        upload_image.url = self.request.session['fileurl']
+        upload_image.eat_date = select_date
+        upload_image.save()
+        context['image_url'] = self.request.session['fileurl']
         #該当する年月日の食事ログを取得
         context['log_columns'] = self.get_personal_log_columns()
         context['day_p_log_list'] = PersonalLog.objects.values(
-            'date', 'restaurant', 'food_name', 'size', 'energie', 'carbohydrate',
+            'id', 'date', 'restaurant', 'food_name', 'size', 'energie', 'carbohydrate',
             'protein', 'fat', 'salt'
         ).filter(
             user=self.request.user, date__date=select_date
         )
-        print(context['day_p_log_list'], select_date)
         return context
 
 class ImageComplete(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView):
     template_name = 'lognuts/image_complete.html'
-    def form_valid(self, form):
-        download_url = form.upload()
-        context = {
-            'download_url': download_url,
-            'form': form,
+    def post(self, request, *args, **kwargs):
+        context = super().get_context_data(**kwargs)
+        #アップロードした画像を取得
+        upload_image = FoodImage.objects.filter(
+            pk=self.request.session['image_pk']
+        ).first()
+        #食事ログのidリストを取得
+        p_id_list = self.request.POST.getlist('mealout_id')
+        #食事ログのリストを取得
+        p_log_list = []
+        for p_id in p_id_list:
+            p_log = PersonalLog.objects.filter(id=p_id).first()
+            # 食事画像のidを追加して食事ログを更新
+            p_log.food_image_id = upload_image
+            p_log.save()
+            p_log_list.append(p_log)
+        context['columns'] = self.get_personal_log_columns()
+        context['p_log_list'] = p_log_list
+        #アップロードした画像に栄養情報を付与
+        upload_image.energie = 0
+        upload_image.protein = 0
+        upload_image.fat = 0
+        upload_image.carbohydrate = 0
+        upload_image.salt = 0
+        for p_log in p_log_list:
+            upload_image.energie += p_log.energie
+            upload_image.protein += p_log.protein
+            upload_image.fat += p_log.fat
+            upload_image.carbohydrate += p_log.carbohydrate
+            upload_image.salt += p_log.salt
+        #付与された栄養情報からp,f,cの比率を計算
+        img_nut = {
+            'energie':upload_image.energie,
+            'protein':upload_image.protein,
+            'fat':upload_image.fat
         }
-        #年月日情報を取得
-        year,month,day = ( 2000+self.kwargs.get('year'),self.kwargs.get('month'),self.kwargs.get('day') ) 
-        select_date = datetime.datetime(year, month, day)
-        #該当する年月日の食事ログを取得
-        context['log_columns'] = self.get_personal_log_columns()
-        context['day_p_log_list'] = PersonalLog.objects.values(
-            'date', 'restaurant', 'food_name', 'size', 'energie', 'carbohydrate',
-            'protein', 'fat', 'salt'
-        ).filter(
-            user=self.request.user, date__date=select_date
-        )
-
+        img_pfc = self.get_pfc(img_nut)
+        upload_image.p_rate = img_pfc['p']
+        upload_image.f_rate = img_pfc['f']
+        upload_image.c_rate = img_pfc['c']
+        #p,f,cの比率からpfc_diffを算出
+        img_pfc_diff = self.get_pfc_diff(img_pfc)
+        upload_image.p_diff = img_pfc_diff['p_diff']
+        upload_image.f_diff = img_pfc_diff['f_diff']
+        upload_image.c_diff = img_pfc_diff['c_diff']
+        upload_image.pfc_diff = img_pfc_diff['pfc_diff']
+        upload_image.save()
         return self.render_to_response(context)

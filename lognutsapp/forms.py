@@ -30,7 +30,6 @@ class ManualForm(forms.ModelForm):
         super(ManualForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
-
     class Meta:
         model = PersonalLog
         fields = (
@@ -68,4 +67,14 @@ class HistoryForm(forms.Form):
 class ImageUploadForm(forms.ModelForm):
     class Meta:
         model = FoodImage
-        fields = '__all__'
+        fields = (
+            'file',
+            'user',
+        )
+        labels = {
+            'file':'料理画像',
+            'user':'ユーザ'
+        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['user'].widget = forms.HiddenInput()

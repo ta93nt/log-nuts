@@ -15,7 +15,7 @@ class PersonalLogAdmin(admin.ModelAdmin):
     list_display = ('user', 'food_name', 'restaurant', 'size', 'energie', 'protein', 'fat', 'carbohydrate', 'date')
 
 class FoodImageAdmin(admin.ModelAdmin):
-    list_display = ()
+    list_display = ('user',)
 
 
 admin.site.unregister(User)
