@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container text-muted pt-3 pb-3">
+    <h2 class="text-muted"> 料理写真ランキング </h2>
+</div>
+
+<div class="container text-muted pt-3 pb-3">
+    <h3 class="pb-2">ギャラリー</h3>
+    <div class="row pt-2 pb-2">
+        {% for f in food_image_list %}
+            <div class="col-md-4">
+            <a href="{{ f.url }}">
+                <img class="img-fluid"  src="{{ f.url }}" />
+            </a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock content %}
+

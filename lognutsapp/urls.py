@@ -13,6 +13,7 @@ urlpatterns = [
     path('image_upload/<int:pk>/<int:year>/<int:month>/<int:day>/', views.ImageUpload.as_view(), name='image_upload'),
     path('image_add_food/<int:pk>/<int:year>/<int:month>/<int:day>/', views.ImageAddFood.as_view(), name='image_add_food'),
     path('image_complete/<int:pk>/<int:year>/<int:month>/<int:day>/', views.ImageComplete.as_view(), name='image_complete'),
+    path('image_ranking/<int:pk>/', views.ImageRanking.as_view(), name='image_ranking'),
     path('search_input/<int:pk>/', views.SearchInput.as_view(), name='search_input'),
     path('search_confirm/<int:pk>/', views.SearchConfirm.as_view(), name='search_confirm'),
     path('search_complete/<int:pk>/', views.SearchComplete.as_view(), name='search_complete'),

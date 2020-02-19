@@ -627,6 +627,12 @@ class DiaryView(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView)
         }
         #pfcのrateのcが0以下の時,0に修正
         context['day_pfc'] = self.adjust_rate_minus_zero(context['day_pfc'])
+        #その日付の画像を取得
+        context['food_image_list'] = FoodImage.objects.filter(
+            user=self.request.user
+        ).values(
+            'url'
+        ).all()
         return context
 
 class ImageUpload(OnlyYouMixin, generic.CreateView):
@@ -731,3 +737,13 @@ class ImageComplete(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateV
         upload_image.pfc_diff = img_pfc_diff['pfc_diff']
         upload_image.save()
         return self.render_to_response(context)
+
+class ImageRanking(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView):
+    template_name = 'lognuts/image_ranking.html'
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        #アップロードした画像を取得
+        #その日付の画像を取得
+        context['food_image_list'] = FoodImage.objects.all().order_by('pfc_diff')
+        print(context['food_image_list'])
+        return context

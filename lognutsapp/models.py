@@ -77,8 +77,9 @@ class FoodImage(models.Model):
     #データ削除時にメディアフォルダの画像も消す
     @receiver(pre_delete)
     def delete_image(sender, instance, **kwargs):
-        if instance.file:
-            instance.file.delete(False)
+        if 'file' in dir(instance):
+            if instance.file:
+                instance.file.delete(False)
     
     def __str__(self):
         """ファイルのURLを返す"""
