@@ -650,8 +650,9 @@ class ImageUpload(OnlyYouMixin, generic.CreateView):
             })
         image_file = self.request.FILES.get('file')
         self.request.session['image_pk'] = self.object.id
-        self.request.session['filename'] = default_storage.save(image_file.name, image_file)
-        self.request.session['fileurl']  = default_storage.url(self.request.session['filename'])
+        #self.request.session['filename'] = default_storage.save(image_file.name, image_file)
+        #self.request.session['fileurl']  = default_storage.url(self.request.session['filename'])
+        print(self.object)
         return ret_reverse
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

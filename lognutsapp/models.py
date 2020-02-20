@@ -78,12 +78,11 @@ class FoodImage(models.Model):
     @receiver(pre_delete)
     def delete_image(sender, instance, **kwargs):
         if 'file' in dir(instance):
-            if instance.file:
-                instance.file.delete(False)
-    
+            instance.file.delete(False)
+    """
     def __str__(self):
-        """ファイルのURLを返す"""
         return self.file.url
+    """
 
 class PersonalLog(models.Model):
     class Meta:
