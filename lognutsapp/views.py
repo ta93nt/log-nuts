@@ -629,7 +629,7 @@ class DiaryView(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView)
         context['day_pfc'] = self.adjust_rate_minus_zero(context['day_pfc'])
         #その日付の画像を取得
         context['food_image_list'] = FoodImage.objects.filter(
-            user=self.request.user
+            user=self.request.user, eat_date=select_date
         ).values(
             'url'
         ).all()
@@ -650,8 +650,9 @@ class ImageUpload(OnlyYouMixin, generic.CreateView):
             })
         image_file = self.request.FILES.get('file')
         image_instance = FoodImage(file=self.request.FILES['file'])
-        self.request.session['filename'] = default_storage.save(image_instance.file.name, image_file)
-        self.request.session['fileurl']  = default_storage.url(self.request.session['filename'])
+        if self.request.session['filename'] is None:
+            self.request.session['filename'] = default_storage.save(image_instance.file.name, image_file)
+            self.request.session['fileurl']  = default_storage.url(self.request.session['filename'])
         self.request.session['image_pk'] = self.object.id
         return ret_reverse
     def get_context_data(self, **kwargs):
