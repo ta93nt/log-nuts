@@ -146,6 +146,9 @@ LOGOUT_REDIRECT_URL='lognuts:top'
 #mealsout_nuts_DBのURL
 MEALSOUT_NUTS_URL='lognutsapp/static/lognuts/csv/mealsout_nuts.csv'
 
+#PFC_SCOREを決定するために使用する値の境界のURL
+PFC_SCORE_SECTION_URL='lognutsapp/static/lognuts/csv/pfc_score_section.csv'
+
 #PFCのレーダーチャートのPFCの基準値
 RADAR_P = Decimal(16.5)
 RADAR_F = Decimal(25)

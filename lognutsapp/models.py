@@ -71,6 +71,8 @@ class FoodImage(models.Model):
     c_diff = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     # PFC_diff
     pfc_diff = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    # PFC_score
+    pfc_score = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
 
     #データ削除時にメディアフォルダの画像も消す
     @receiver(pre_delete)

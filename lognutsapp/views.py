@@ -403,6 +403,24 @@ class NutsCulcMixin:
         if arg_pfc['c'] is not None:
             if arg_pfc['c']<0 : arg_pfc['c'] = 0 
         return arg_pfc
+    def judge_pfc_score(self, pfc_diff):
+        #pfc_diff -> pfc_scoreへ変換する
+        pfc_score_section_df = pd.read_csv(settings.PFC_SCORE_SECTION_URL)
+        if pfc_diff == 0:
+            #100点の時
+            pfc_score = 100
+        elif pfc_score_section_df.at[100, 'section_min'] < pfc_diff:
+            #0点の時
+            pfc_score = 0
+        #0点 < pfc_score < 100点 の時
+        for s_index, s_item in pfc_score_section_df.iterrows():
+            if s_item.section_min < pfc_diff <= s_item.section_max:
+                pfc_score = s_item.pfc_score
+                #pfc_scoreをdecimal型に変換
+                pfc_score = Decimal(pfc_score).quantize(
+                    Decimal('0.1'), rounding=ROUND_HALF_UP
+                )
+        return pfc_score
 
 """
 グローバル関数
@@ -730,6 +748,7 @@ class ImageComplete(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateV
         upload_image.f_diff = img_pfc_diff['f_diff']
         upload_image.c_diff = img_pfc_diff['c_diff']
         upload_image.pfc_diff = img_pfc_diff['pfc_diff']
+        upload_image.pfc_score = self.judge_pfc_score(img_pfc_diff['pfc_diff'])
         upload_image.save()
         return self.render_to_response(context)
 
@@ -740,10 +759,8 @@ class ImageRanking(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateVi
         #アップロードした画像を取得
         #その日付の画像を取得
         food_images = FoodImage.objects.all().order_by('pfc_diff')
-        print(food_images)
         food_list = []
         for f in food_images:
-            print(f.pfc_diff)
             p_log = PersonalLog.objects.all().filter(
                 food_image_id=f
             )

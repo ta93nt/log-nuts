@@ -4,6 +4,8 @@
 
 <div class="container text-muted pt-3 pb-3">
     <h2 class="text-muted"> 料理写真ランキング </h2>
+    <p>投稿した写真が栄養スコアが高い順にランキング表示されます。<br>
+    栄養スコアは厚生労働省の栄養所要量のタンパク質、脂質、炭水化物の値をもとに、算出しています。</p>
 </div>
 
 <div class="container text-muted pt-3 pb-3">
@@ -14,6 +16,10 @@
                     <h5 class="card-title card-header bg-dark text-light">{{ image.user }}</h5>
                     <img class="card-img-top"  src="{{ image.file.url }}" style="border-radius: 0;">
                     <div class="card-body">
+                        <div class="progress mt-2 mb-2">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-info w-30" role="progressbar" aria-valuenow="30"  aria-valuemin="0" aria-valuemax="100" style="width: {{image.pfc_score}}%">
+                            {{image.pfc_score|floatformat:0 }}</div>
+                        </div>
                         {% for p in p_log %}
                             <p class="card-text">{{ p }}</p>
                         {% endfor %}
