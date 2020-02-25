@@ -30,15 +30,6 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-try:
-    from .local_settings import *
-except ImportError:
-    pass
-
-if not DEBUG:
-    import django_heroku
-    django_heroku.settings(locals())
-
 ALLOWED_HOSTS = []
 
 
@@ -188,3 +179,13 @@ C_RATE_MIN = 65
 MENU_TAG_LIST = [
     0,1,2,3
 ]
+
+# herokuデプロイをするために追加
+try:
+    from .local_settings import *
+except ImportError:
+    pass
+
+if not DEBUG:
+    import django_heroku
+    django_heroku.settings(locals())
