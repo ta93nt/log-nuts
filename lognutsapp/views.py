@@ -650,7 +650,7 @@ class ImageUpload(OnlyYouMixin, generic.CreateView):
             })
         image_file = self.request.FILES.get('file')
         image_instance = FoodImage(file=self.request.FILES['file'])
-        if self.request.session['filename'] is None:
+        if image_instance is not None:
             self.request.session['filename'] = default_storage.save(image_instance.file.name, image_file)
             self.request.session['fileurl']  = default_storage.url(self.request.session['filename'])
         self.request.session['image_pk'] = self.object.id
