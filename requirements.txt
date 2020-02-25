@@ -1,0 +1,4 @@
+pandas==1.0.0
+django_environ==0.4.5
+Django==3.0.2
+environ==1.0
