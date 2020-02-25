@@ -1,0 +1,1 @@
+web: gunicorn lognutsapp.wsgi --log-file -
