@@ -85,7 +85,7 @@ WSGI_APPLICATION = 'LogNuts.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-DATABASES['default'] = dj_database_url.config()
+DATABASES = { 'default': dj_database_url.config() }
 
 
 # Password validation
