@@ -12,7 +12,9 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 
 import os
 import environ #環境変数をファイルから読み込む
+import dj_database_url
 from decimal import Decimal
+
 
 env = environ.Env()
 env.read_env('.env')
@@ -30,7 +32,7 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [*]
 
 
 # Application definition
@@ -83,16 +85,7 @@ WSGI_APPLICATION = 'LogNuts.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE':   env('MYSQL_ENGINE'),
-        'NAME':     env('MYSQL_NAME'),
-        'USER':     env('MYSQL_USER'),
-        'PASSWORD': env('MYSQL_PASS'),
-        'HOST':     env('MYSQL_HOST'),
-        'PORT':     env('MYSQL_PORT'),
-    }
-}
+DATABASES['default'] = dj_database_url.config()
 
 
 # Password validation
