@@ -15,8 +15,8 @@
     <div class="row pt-2 pb-2">
         {% for f in food_image_list %}
             <div class="col-md-4 pt-2">
-            <a href="{{ f.url }}">
-                <img class="img-fluid"  src="{{ f.url }}" />
+            <a href="{{ f.file.url }}">
+                <img class="img-fluid"  src="{{ f.file.url }}" />
             </a>
             </div>
         {% endfor %}

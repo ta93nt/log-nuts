@@ -140,7 +140,7 @@ context作成を補助するミックスイン
 class ContextMixin:
     def get_personal_log_columns(self):
         columns = [
-            'データ挿入日時', 
+            '食べた日時', 
             'レストラン名', 
             'メニュー名', 
             'サイズ', 
@@ -631,8 +631,6 @@ class DiaryView(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView)
         #その日付の画像を取得
         context['food_image_list'] = FoodImage.objects.filter(
             user=self.request.user, eat_date=select_date
-        ).values(
-            'url'
         ).all()
         return context
 
@@ -649,11 +647,6 @@ class ImageUpload(OnlyYouMixin, generic.CreateView):
             'month': self.kwargs['month'],
             'day': self.kwargs['day'],
             })
-        image_file = self.request.FILES.get('file')
-        image_instance = FoodImage(file=self.request.FILES['file'])
-        if image_instance is not None:
-            self.request.session['filename'] = default_storage.save(image_instance.file.name, image_file)
-            self.request.session['fileurl']  = default_storage.url(self.request.session['filename'])
         self.request.session['image_pk'] = self.object.id
         return ret_reverse
     def get_context_data(self, **kwargs):
@@ -676,10 +669,8 @@ class ImageAddFood(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateVi
         upload_image = FoodImage.objects.filter(
             pk=self.request.session['image_pk']
         ).first()
-        upload_image.url = self.request.session['fileurl']
         upload_image.eat_date = select_date
         upload_image.save()
-        context['image_url'] = self.request.session['fileurl']
         #該当する年月日の食事ログを取得
         context['log_columns'] = self.get_personal_log_columns()
         context['day_p_log_list'] = PersonalLog.objects.values(

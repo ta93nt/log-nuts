@@ -10,7 +10,7 @@
     <div class="card-columns">
         {% for image, p_log in food_list %}
             <div class="card">
-                <img class="card-img-top"  src="{{ image.url }}" />
+                <img class="card-img-top"  src="{{ image.file.url }}" />
                 <div class="card-body">
                     <h5 class="card-title">{{ image.user }}</h5>
                     {% for p in p_log %}
@@ -19,13 +19,6 @@
                     <p class="card-text"><small class="text-muted">{{ image.eat_date }}</small></p>
                 </div>
             </div>
-            <!--
-            <div class="col-md-4 pt-2">
-            <a href="{{ f.url }}">
-                <img class="img-fluid"  src="{{ f.url }}" />
-            </a>
-            </div>
-            -->
         {% endfor %}
     </div>
 </div>

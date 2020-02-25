@@ -43,8 +43,6 @@ class FoodImage(models.Model):
     file = models.ImageField('画像ファイル')
     #ユーザ
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    #画像のURL
-    url = models.CharField(max_length=300, null=True, blank=True)
     #食べた日付
     eat_date = models.DateField(default=timezone.now)
     #アップロード日時
