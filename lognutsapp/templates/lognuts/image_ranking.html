@@ -10,9 +10,9 @@
     <div class="card-columns">
         {% for image, p_log in food_list %}
             <div class="card">
+                <h5 class="card-title card-header bg-dark text-light">{{ image.user }}</h5>
                 <img class="card-img-top"  src="{{ image.file.url }}" />
                 <div class="card-body">
-                    <h5 class="card-title">{{ image.user }}</h5>
                     {% for p in p_log %}
                         <p class="card-text">{{ p }}</p>
                     {% endfor %}
