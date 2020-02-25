@@ -1,9 +1,11 @@
 # log-nuts
 食事ログを入力することで、栄養バランスを整える食品の推薦や栄養素の可視化をしてくれるアプリです。
 
-# Demo
+## Demo Log-Input
 - ３種類の方法で食事ログの記録が簡単にできます。
 ![result](https://github.com/ta93nt/log-nuts/blob/media/demo/lognuts_200217.gif)
+
+## Demo Image-Ranking
 - 『料理画像 × 食事ログ』を組み合わせることで、料理画像あたりの栄養スコアを算出、ランキング表示します。
 ![result](https://github.com/ta93nt/log-nuts/blob/media/demo/image_ranking_demo.gif)
 
