@@ -175,6 +175,7 @@ class ContextMixin:
         p_log = PersonalLog()
         p_log.user = self.request.user
         p_log.restaurant = post['restaurant']
+        p_log.date = post['date']
         p_log.size = post['size']
         p_log.food_name = post['food_name']
         p_log.energie = post['energie']
