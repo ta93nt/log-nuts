@@ -746,6 +746,12 @@ class ImageRanking(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateVi
         context = super().get_context_data(**kwargs)
         #アップロードした画像を取得
         #その日付の画像を取得
-        context['food_image_list'] = FoodImage.objects.all().order_by('pfc_diff')
-        print(context['food_image_list'])
+        food_images = FoodImage.objects.all().order_by('pfc_diff')
+        food_list = []
+        for f in food_images:
+            p_log = PersonalLog.objects.all().filter(
+                food_image_id=f
+            )
+            food_list.append( (f, p_log) )
+        context['food_list'] = food_list
         return context

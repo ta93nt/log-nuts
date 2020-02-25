@@ -7,13 +7,25 @@
 </div>
 
 <div class="container text-muted pt-3 pb-3">
-    <div class="row pt-2 pb-2">
-        {% for f in food_image_list %}
+    <div class="card-columns">
+        {% for image, p_log in food_list %}
+            <div class="card">
+                <img class="card-img-top"  src="{{ image.url }}" />
+                <div class="card-body">
+                    <h5 class="card-title">{{ image.user }}</h5>
+                    {% for p in p_log %}
+                        <p class="card-text">{{ p }}</p>
+                    {% endfor %}
+                    <p class="card-text"><small class="text-muted">{{ image.eat_date }}</small></p>
+                </div>
+            </div>
+            <!--
             <div class="col-md-4 pt-2">
             <a href="{{ f.url }}">
                 <img class="img-fluid"  src="{{ f.url }}" />
             </a>
             </div>
+            -->
         {% endfor %}
     </div>
 </div>
