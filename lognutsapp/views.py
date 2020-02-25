@@ -671,6 +671,7 @@ class ImageAddFood(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateVi
         ).first()
         upload_image.eat_date = select_date
         upload_image.save()
+        context['upload_image'] = upload_image
         #該当する年月日の食事ログを取得
         context['log_columns'] = self.get_personal_log_columns()
         context['day_p_log_list'] = PersonalLog.objects.values(
@@ -739,8 +740,10 @@ class ImageRanking(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateVi
         #アップロードした画像を取得
         #その日付の画像を取得
         food_images = FoodImage.objects.all().order_by('pfc_diff')
+        print(food_images)
         food_list = []
         for f in food_images:
+            print(f.pfc_diff)
             p_log = PersonalLog.objects.all().filter(
                 food_image_id=f
             )

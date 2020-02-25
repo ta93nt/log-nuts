@@ -7,16 +7,18 @@
 </div>
 
 <div class="container text-muted pt-3 pb-3">
-    <div class="card-columns">
+    <div class="row">
         {% for image, p_log in food_list %}
-            <div class="card">
-                <h5 class="card-title card-header bg-dark text-light">{{ image.user }}</h5>
-                <img class="card-img-top"  src="{{ image.file.url }}" />
-                <div class="card-body">
-                    {% for p in p_log %}
-                        <p class="card-text">{{ p }}</p>
-                    {% endfor %}
-                    <p class="card-text"><small class="text-muted">{{ image.eat_date }}</small></p>
+            <div class="col-md-4 pb-3">
+                <div class="card">
+                    <h5 class="card-title card-header bg-dark text-light">{{ image.user }}</h5>
+                    <img class="card-img-top"  src="{{ image.file.url }}" style="border-radius: 0;">
+                    <div class="card-body">
+                        {% for p in p_log %}
+                            <p class="card-text">{{ p }}</p>
+                        {% endfor %}
+                        <p class="card-text"><small class="text-muted">{{ image.eat_date }}</small></p>
+                    </div>
                 </div>
             </div>
         {% endfor %}
