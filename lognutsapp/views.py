@@ -2,6 +2,7 @@ from django.views import generic
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
+from django.core.files.storage import default_storage
 from django.urls import reverse_lazy
 from . import models
 from django.db.models import Sum, Q
@@ -18,12 +19,12 @@ from django.contrib.auth.views import (
 
 #モデル
 from .models import (
-    Subject, PersonalLog
+    Subject, PersonalLog, FoodImage
 )
 
 #フォーム
 from .forms import (
-    LoginForm, SearchForm, ManualForm, HistoryForm
+    LoginForm, SearchForm, ManualForm, HistoryForm, ImageUploadForm
 )
 
 #ライブラリ
@@ -139,14 +140,14 @@ context作成を補助するミックスイン
 class ContextMixin:
     def get_personal_log_columns(self):
         columns = [
-            'データ挿入日時', 
+            '食べた日時', 
             'レストラン名', 
             'メニュー名', 
             'サイズ', 
             'カロリー', 
-            '炭水化物', 
             'タンパク質', 
             '脂質', 
+            '炭水化物', 
             '食塩相当量'
         ]
         return columns
@@ -174,6 +175,7 @@ class ContextMixin:
         p_log = PersonalLog()
         p_log.user = self.request.user
         p_log.restaurant = post['restaurant']
+        p_log.date = post['date']
         p_log.size = post['size']
         p_log.food_name = post['food_name']
         p_log.energie = post['energie']
@@ -376,6 +378,8 @@ class NutsCulcMixin:
                     suggest_foods = suggest_df.sort_values('after_pfc_diff').head(settings.FOOD_SUGGESTION_NUM)
                 else:
                     suggest_foods = suggest_df
+        else:
+            suggest_foods =  pd.DataFrame()
         return suggest_foods
     def get_top_suggestion(self, suggest_df):
         nut_dict = {}
@@ -399,6 +403,24 @@ class NutsCulcMixin:
         if arg_pfc['c'] is not None:
             if arg_pfc['c']<0 : arg_pfc['c'] = 0 
         return arg_pfc
+    def judge_pfc_score(self, pfc_diff):
+        #pfc_diff -> pfc_scoreへ変換する
+        pfc_score_section_df = pd.read_csv(settings.PFC_SCORE_SECTION_URL)
+        if pfc_diff == 0:
+            #100点の時
+            pfc_score = 100
+        elif pfc_score_section_df.at[100, 'section_min'] < pfc_diff:
+            #0点の時
+            pfc_score = 0
+        #0点 < pfc_score < 100点 の時
+        for s_index, s_item in pfc_score_section_df.iterrows():
+            if s_item.section_min < pfc_diff <= s_item.section_max:
+                pfc_score = s_item.pfc_score
+                #pfc_scoreをdecimal型に変換
+                pfc_score = Decimal(pfc_score).quantize(
+                    Decimal('0.1'), rounding=ROUND_HALF_UP
+                )
+        return pfc_score
 
 """
 グローバル関数
@@ -567,6 +589,7 @@ class HistoryInput(OnlyYouMixin, ContextMixin, generic.TemplateView):
             p_log_queryset = PersonalLog.objects.filter(id=p_id).first()
             p_log = self.get_personal_log_from_queryset(p_log_queryset)
             p_log_list.append(p_log)
+        context['columns'] = self.get_personal_log_columns()
         context['p_log_list'] = p_log_list
         self.request.session['p_id_list'] = p_id_list #セッションに食事ログidリストを保存
         return self.render_to_response(context)
@@ -584,5 +607,163 @@ class HistoryComplete(OnlyYouMixin, ContextMixin, generic.TemplateView):
                 p_log = self.get_personal_log_from_queryset(p_log_queryset)
                 p_log_list.append(p_log)
                 p_log.save() #食事ログを保存
+            context['columns'] = self.get_personal_log_columns()
             context['p_log_list'] = p_log_list
+        return context
+
+class DiaryView(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView):
+    """日付ごとのページ"""
+    template_name = 'lognuts/diary.html'
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        #食事ログの画像
+        context['food_image_list'] = FoodImage
+        #１日の食事ログのを取得
+        context['log_columns'] = self.get_personal_log_columns()
+        year,month,day = ( 2000+self.kwargs.get('year'),self.kwargs.get('month'),self.kwargs.get('day') ) 
+        select_date = datetime.datetime(year, month, day)
+        context['PersonalLog'] = PersonalLog.objects.values('date', 'food_name').filter(
+            user=self.request.user
+        )
+        context['day_p_log_list'] = PersonalLog.objects.values(
+            'date', 'restaurant', 'food_name', 'size', 'energie', 'carbohydrate',
+            'protein', 'fat', 'salt'
+        ).filter(
+            user=self.request.user, date__date=select_date
+        )
+        #栄養素の可視化に利用する
+        context['day_info'] = {
+            'year':year,
+            'month':month,
+            'day':day
+        }
+        context['day_nut'] = self.get_day_nut( select_date )
+        context['day_pfc'] = self.get_pfc( context['day_nut'] )
+        context['radar_pfc_point'] = {
+            'p': settings.RADAR_P,
+            'f': settings.RADAR_F,
+            'c': settings.RADAR_C
+        }
+        #pfcのrateのcが0以下の時,0に修正
+        context['day_pfc'] = self.adjust_rate_minus_zero(context['day_pfc'])
+        #その日付の画像を取得
+        context['food_image_list'] = FoodImage.objects.filter(
+            user=self.request.user, eat_date=select_date
+        ).all()
+        return context
+
+class ImageUpload(OnlyYouMixin, generic.CreateView):
+    model = FoodImage
+    form_class = ImageUploadForm
+    template_name = 'lognuts/image_upload.html'
+    def get_initial(self):
+        return {'user': self.request.user}
+    def get_success_url(self):
+        ret_reverse = reverse_lazy('lognuts:image_add_food', kwargs={
+            'pk': self.kwargs['pk'],
+            'year': self.kwargs['year'],
+            'month': self.kwargs['month'],
+            'day': self.kwargs['day'],
+            })
+        self.request.session['image_pk'] = self.object.id
+        return ret_reverse
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['year'] =   2000+self.kwargs.get('year')
+        context['month'] =  self.kwargs.get('month')
+        context['day'] =    self.kwargs.get('day')
+        return context
+
+class ImageAddFood(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView):
+    template_name = 'lognuts/image_add_food.html'
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        year,month,day = ( self.kwargs.get('year'),self.kwargs.get('month'),self.kwargs.get('day') ) 
+        context['year'] =   year
+        context['month'] =  month
+        context['day'] =    day
+        select_date = datetime.datetime(year, month, day)
+        #画像のURLをDBに追加
+        upload_image = FoodImage.objects.filter(
+            pk=self.request.session['image_pk']
+        ).first()
+        upload_image.eat_date = select_date
+        upload_image.save()
+        context['upload_image'] = upload_image
+        #該当する年月日の食事ログを取得
+        context['log_columns'] = self.get_personal_log_columns()
+        context['day_p_log_list'] = PersonalLog.objects.values(
+            'id', 'date', 'restaurant', 'food_name', 'size', 'energie', 'carbohydrate',
+            'protein', 'fat', 'salt'
+        ).filter(
+            user=self.request.user, date__date=select_date
+        )
+        return context
+
+class ImageComplete(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView):
+    template_name = 'lognuts/image_complete.html'
+    def post(self, request, *args, **kwargs):
+        context = super().get_context_data(**kwargs)
+        #アップロードした画像を取得
+        upload_image = FoodImage.objects.filter(
+            pk=self.request.session['image_pk']
+        ).first()
+        #食事ログのidリストを取得
+        p_id_list = self.request.POST.getlist('mealout_id')
+        #食事ログのリストを取得
+        p_log_list = []
+        for p_id in p_id_list:
+            p_log = PersonalLog.objects.filter(id=p_id).first()
+            # 食事画像のidを追加して食事ログを更新
+            p_log.food_image_id = upload_image
+            p_log.save()
+            p_log_list.append(p_log)
+        context['columns'] = self.get_personal_log_columns()
+        context['p_log_list'] = p_log_list
+        #アップロードした画像に栄養情報を付与
+        upload_image.energie = 0
+        upload_image.protein = 0
+        upload_image.fat = 0
+        upload_image.carbohydrate = 0
+        upload_image.salt = 0
+        for p_log in p_log_list:
+            upload_image.energie += p_log.energie
+            upload_image.protein += p_log.protein
+            upload_image.fat += p_log.fat
+            upload_image.carbohydrate += p_log.carbohydrate
+            upload_image.salt += p_log.salt
+        #付与された栄養情報からp,f,cの比率を計算
+        img_nut = {
+            'energie':upload_image.energie,
+            'protein':upload_image.protein,
+            'fat':upload_image.fat
+        }
+        img_pfc = self.get_pfc(img_nut)
+        upload_image.p_rate = img_pfc['p']
+        upload_image.f_rate = img_pfc['f']
+        upload_image.c_rate = img_pfc['c']
+        #p,f,cの比率からpfc_diffを算出
+        img_pfc_diff = self.get_pfc_diff(img_pfc)
+        upload_image.p_diff = img_pfc_diff['p_diff']
+        upload_image.f_diff = img_pfc_diff['f_diff']
+        upload_image.c_diff = img_pfc_diff['c_diff']
+        upload_image.pfc_diff = img_pfc_diff['pfc_diff']
+        upload_image.pfc_score = self.judge_pfc_score(img_pfc_diff['pfc_diff'])
+        upload_image.save()
+        return self.render_to_response(context)
+
+class ImageRanking(OnlyYouMixin, NutsCulcMixin, ContextMixin, generic.TemplateView):
+    template_name = 'lognuts/image_ranking.html'
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        #アップロードした画像を取得
+        #その日付の画像を取得
+        food_images = FoodImage.objects.all().order_by('pfc_diff')
+        food_list = []
+        for f in food_images:
+            p_log = PersonalLog.objects.all().filter(
+                food_image_id=f
+            )
+            food_list.append( (f, p_log) )
+        context['food_list'] = food_list
         return context

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- グラフを表示するChart.jsを読み込む -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.bundle.min.js"></script>
+
+<div class="container text-muted pt-3 pb-3">
+    <h2 class="text-muted"> {{day_info.month}}/{{day_info.day}}の食事 </h2>
+</div>
+
+
+<div class="container text-muted pt-3 pb-3">
+    <h3 class="pb-2">ギャラリー</h3>
+    <div class="row pt-2 pb-2">
+        {% for f in food_image_list %}
+            <div class="col-md-4 pt-2">
+            <a href="{{ f.file.url }}">
+                <img class="img-fluid"  src="{{ f.file.url }}" />
+            </a>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="pt-3">
+        <a href="{% url 'lognuts:image_upload' user.pk year month day %}">
+            <button type="submit" class="btn btn-danger ml-3">
+                <i class="fas fa-camera"></i>　料理画像を追加
+            </button>
+        </a>
+    </div>
+</div>
+
+<div class="container table-responsive pt-4 pb-4">
+    <h3 class="text-muted"> 食べた物 </h3>
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          {% for c in log_columns %}
+            <th scope="col" class="text-nowrap">{{ c }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for p_log in day_p_log_list %}
+          <tr>
+            <td>{{p_log.date}}</td>
+            <td>{{p_log.restaurant}}</td>
+            <td>{{p_log.food_name}}</td>
+            <td>{{p_log.size}}</td>
+            <td>{{p_log.energie}}</td>
+            <td>{{p_log.protein}}</td>
+            <td>{{p_log.fat}}</td>
+            <td>{{p_log.carbohydrate}}</td>
+            <td>{{p_log.salt}}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+</div>
+
+<div class="container pt-2 pb-2">
+    <h3 class="text-muted"> 食事の分析 </h3>
+    <div class="row">
+        <div class="col-md-6 pt-3 text-center">
+            <div class="card border-danger mt-3">
+                <div class="card-header text-white bg-danger ">
+                    <h4>１日のカロリー</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="chart_energie"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 pt-3 text-center">
+            <div class="card border-info mt-3">
+                <div class="card-header text-white bg-info ">
+                    <h4>1日の栄養バランス</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="chart_pfc" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--１週間のカロリー(Energie)棒グラフ -->
+<script>
+var ctx = document.getElementById("chart_energie").getContext('2d');
+var myChart = new Chart(ctx, {
+    responsive : true,
+    scaleLabel: "<%=value%> kcal",
+    type: 'bar',
+    data: {
+            labels: ["day"],
+            datasets: [{
+                label: '摂取したカロリー',
+                data: [
+                    {% if day_nut.energie is None %}
+                        0,
+                    {% else %}
+                        {{day_nut.energie}},
+                    {% endif %}
+                ],
+                backgroundColor: "rgba(230,57,70,0.6)"
+            }]
+        },
+    }
+);
+</script>
+
+<!-- 三大栄養素(PFC)のレーダーチャート -->
+<script>
+var ctx = document.getElementById('chart_pfc').getContext('2d');
+var myChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+    labels: ['タンパク質(P)', '脂質(F)', '炭水化物(C)'],
+    datasets: [
+    {% if top_suggestion_pfc.food_name != None %}
+    {
+        label: '改善後の栄養バランス',
+        data: [
+        {{ top_suggestion_pfc.p|escapejs }}/{{ radar_pfc_point.p|escapejs }},
+        {{ top_suggestion_pfc.f|escapejs }}/{{ radar_pfc_point.f|escapejs }},
+        {{ top_suggestion_pfc.c|escapejs }}/{{ radar_pfc_point.c|escapejs }}
+        ],
+        backgroundColor: "rgba(81,204,204,0.6)"
+    },
+    {% endif %}
+    {
+        label: '１日の栄養バランス',
+        data: [
+        {{ day_pfc.p|escapejs }} / {{ radar_pfc_point.p|escapejs }},
+        {{ day_pfc.f|escapejs }} / {{ radar_pfc_point.f|escapejs }},
+        {{ day_pfc.c|escapejs }} / {{ radar_pfc_point.c|escapejs }}
+        ],
+        backgroundColor: "rgba(81,204,204,0.6)"
+    }
+    ]
+    }
+});
+</script>
+
+{% endblock content %}
+

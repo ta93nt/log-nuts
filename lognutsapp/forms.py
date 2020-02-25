@@ -1,9 +1,10 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
+from django.core.files.storage import default_storage
 from django.conf import settings
 #モデル
 from .models import (
-    PersonalLog
+    PersonalLog, FoodImage
 )
 
 class LoginForm(AuthenticationForm):
@@ -29,7 +30,6 @@ class ManualForm(forms.ModelForm):
         super(ManualForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
-
     class Meta:
         model = PersonalLog
         fields = (
@@ -63,3 +63,18 @@ class HistoryForm(forms.Form):
         super(HistoryForm, self).__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs["class"] = "form-control"
+
+class ImageUploadForm(forms.ModelForm):
+    class Meta:
+        model = FoodImage
+        fields = (
+            'file',
+            'user',
+        )
+        labels = {
+            'file':'料理画像',
+            'user':'ユーザ'
+        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['user'].widget = forms.HiddenInput()

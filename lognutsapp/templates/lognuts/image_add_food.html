@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+<div class="container text-muted pt-3 pb-3">
+    <h2>写真に料理を追加</h2>
+    <!--プログレスバー-->
+    <div class="progress mb-2">
+        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info w-30" role="progressbar" aria-valuenow="30"  aria-valuemin="0" aria-valuemax="100" style="width: 66%">
+        </div>
+    </div>
+</div>
+
+<div class="container text-muted pt-3 pb-3">
+    <!--アップロードした画像に食事ログを紐つける-->
+    <p>画像に写っているのはどの料理ですか？</p>
+
+    <div class="row pt-2 pb-4">
+
+        <div class="col-md-6 table-responsive">
+            <form action="{% url 'lognuts:image_complete' user.pk year month day%}" method="POST" enctype="multipart/form-data">
+                {{ form.as_p }}
+                {% csrf_token %}
+                <button class="btn btn-danger ml-3 mb-3" type="submit">写真に料理を追加</button>
+                
+                <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col" class="text-nowrap"></th>
+                        {% for c in log_columns %}
+                            <th scope="col" class="text-nowrap">{{ c }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p_log in day_p_log_list %}
+                    <tr>
+                        <td><input type="checkbox" name="mealout_id" value="{{p_log.id}}"></td>
+                        <td>{{p_log.date}}</td>
+                        <td>{{p_log.restaurant}}</td>
+                        <td>{{p_log.food_name}}</td>
+                        <td>{{p_log.size}}</td>
+                        <td>{{p_log.energie}}</td>
+                        <td>{{p_log.protein}}</td>
+                        <td>{{p_log.fat}}</td>
+                        <td>{{p_log.carbohydrate}}</td>
+                        <td>{{p_log.salt}}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                </table>
+            </form>
+        </div>
+
+        <!--アップロードした画像を表示-->
+        <div class="col-md-6">
+            <a href="{{ upload_image.file.url }}">
+            <img class="img-fluid"  src="{{ upload_image.file.url }}" />
+            </a>
+        </div>
+</div>
+
+{% endblock content %}

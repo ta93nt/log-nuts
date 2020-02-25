@@ -28,7 +28,16 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
+
+try:
+    from .local_settings import *
+except ImportError:
+    pass
+
+if not DEBUG:
+    import django_heroku
+    django_heroku.settings(locals())
 
 ALLOWED_HOSTS = []
 
@@ -133,6 +142,9 @@ USE_TZ = False
 
 STATIC_URL = '/static/'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 #ログイン画面のURL
 LOGIN_URL = 'lognuts:login'
 #ログイン後に遷移する画面のURL
@@ -142,6 +154,9 @@ LOGOUT_REDIRECT_URL='lognuts:top'
 
 #mealsout_nuts_DBのURL
 MEALSOUT_NUTS_URL='lognutsapp/static/lognuts/csv/mealsout_nuts.csv'
+
+#PFC_SCOREを決定するために使用する値の境界のURL
+PFC_SCORE_SECTION_URL='lognutsapp/static/lognuts/csv/pfc_score_section.csv'
 
 #PFCのレーダーチャートのPFCの基準値
 RADAR_P = Decimal(16.5)
