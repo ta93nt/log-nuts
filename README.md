@@ -1,6 +1,6 @@
 # log-nuts
 食事ログを入力することで、栄養バランスを整える食品の推薦や栄養素の可視化をしてくれるアプリです。
-[https://lognuts.herokuapp.com/lognuts/](https://lognuts.herokuapp.com/lognuts/)
+[http://www.ta93nt.com/lognuts/](http://www.ta93nt.com/lognuts/)
 
 ## Demo Log-Input
 - ３種類の方法で食事ログの記録が簡単にできます。
