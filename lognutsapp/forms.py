@@ -10,9 +10,11 @@ from .models import (
 class LoginForm(AuthenticationForm):
     """ログイン画面のフォーム"""
     def __init__(self, *args, **kwargs):
-       super().__init__(*args, **kwargs)
-       self.fields['username'].widget.attrs['class'] = 'form-control'
-       self.fields['password'].widget.attrs['class'] = 'form-control'
+        super().__init__(*args, **kwargs)
+        self.fields['username'].widget.attrs['class'] = 'form-control'
+        self.fields['password'].widget.attrs['class'] = 'form-control'
+        for field in self.fields.values():
+            field.widget.attrs['placeholder'] = field.label
 
 class SearchForm(forms.Form):
     """検索入力フォーム"""
