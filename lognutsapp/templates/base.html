@@ -43,7 +43,6 @@
                     {% if user and not user.is_anonymous %}
                         <li class="nav-item pl-1"><a class="nav-link" href="{% url 'lognuts:mypage' user.pk %}">マイページ</a></li>
                         <li class="nav-item pl-1"><a class="nav-link" href="{% url 'lognuts:image_ranking' user.pk %}">ランキング</a></li>
-                        <li class="nav-item pl-1"><a class="nav-link" href="#">ユーザ情報</a></li>
                         <li class="nav-item pl-1"><a class="nav-link" href="{% url 'lognuts:logout' %}">ログアウト</a></li>
                     {% else %}
                         <li class="nav-item pl-1"><a class="nav-link" href="{% url 'lognuts:login' %}">ログイン</a></li>
@@ -102,7 +101,7 @@
                         <li><a class="text-white" href="{% url 'lognuts:top' %}">トップ</a></li>
                         {% if user and not user.is_anonymous %}
                             <li><a class="text-white" href="{% url 'lognuts:mypage' user.pk %}">マイページ</a></li>
-                            <li><a class="text-white" href="/">ユーザ情報</a class="text-white"></li>
+                            <li><a class="text-white" href="{% url 'lognuts:image_ranking' user.pk %}">ランキング</a></li>
                             <li><a class="text-white" href="{% url 'lognuts:logout' %}">ログアウト</a></li>
                         {% else %}
                             <li><a class="text-white" href="{% url 'lognuts:login' %}">ログイン</a class="text-white"></li>
