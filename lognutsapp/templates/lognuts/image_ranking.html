@@ -13,7 +13,7 @@
         {% for image, p_log in food_list %}
             <div class="col-md-4 pb-3">
                 <div class="card">
-                    <h5 class="card-title card-header bg-dark text-light">{{ image.user }}</h5>
+                    <h5 class="card-title card-header bg-dark text-light"><i class="fas fa-user-circle" style="font-size: 25px;"></i>　{{ image.user }}</h5>
                     <img class="card-img-top"  src="{{ image.file.medium.url }}" style="border-radius: 0;">
                     <div class="card-body">
                         <div class="progress mt-2 mb-2">
