@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'bootstrap4', #レスポンシブデザイン導入のため
     'storages',   #AWS S3を利用するため
+    'stdimage',   #画像をリサイズするため
 ]
 
 MIDDLEWARE = [

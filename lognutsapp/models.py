@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from django.utils import timezone #タイムゾーンを扱うために追加
+from stdimage.models import StdImageField
 
 class SuggestionFoodsAnalysis(models.Model):
     class Meta:
@@ -40,7 +41,11 @@ class SuggestionFoodsAnalysis(models.Model):
 class FoodImage(models.Model):
     """アップロードされたファイルを表すモデル"""
     #画像ファイル
-    file = models.ImageField('画像ファイル')
+    file = StdImageField(variations={
+        'large': (600, 400),
+        'thumbnail': (100, 100, True),
+        'medium': (300, 200),
+    })
     #ユーザ
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     #食べた日付
