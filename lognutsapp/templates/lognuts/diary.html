@@ -16,7 +16,7 @@
         {% for f in food_image_list %}
             <div class="col-md-4 pt-2">
             <a href="{{ f.file.url }}">
-                <img class="img-fluid"  src="{{ f.file.url }}" />
+                <img class="img-fluid"  src="{{ f.file.medium.url }}" />
             </a>
             </div>
         {% endfor %}
