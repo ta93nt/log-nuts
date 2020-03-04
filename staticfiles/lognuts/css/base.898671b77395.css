@@ -1,0 +1,32 @@
+/* ヘッダーからフッターまでのページ高さの最低を設定 */
+.set-page-min-height {
+    min-height: 80vh;
+}
+
+/* トップの背景画像 */
+.top-image {
+    background-image: url("/static/lognuts/img/nuts.897adbdb4447.jpg");
+    background-position: center;
+    background-size: cover;
+    height:80vh;
+}
+
+/* 背景画像に透かしを入れる */
+.background-lighten {
+    background-color:rgba(255,255,255,0.5);
+    background-blend-mode:lighten;
+}
+
+/* ウェブフォント */
+.font-logo{
+    font-family: 'Kaushan Script', cursive;
+}
+
+.wf-mplus1p { 
+    font-family: "M PLUS 1p"; 
+}
+
+/* ドットアンダーライン */
+.dot_under {
+  border-bottom: dotted 2px crimson;
+}
